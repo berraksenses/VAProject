@@ -4,11 +4,11 @@ viewportHeight = window.innerHeight;
 viewportWidth = window.innerWidth;
 
 const margin_scatter = {top: 20, right: 30 , bottom: 30, left: 30},
-        width_scatter = (viewportWidth*0.5) - margin_scatter.left - margin_scatter.right,
+        width_scatter = (viewportWidth*0.4) - margin_scatter.left - margin_scatter.right,
         height_scatter = viewportHeight*0.6 - margin_scatter.top - margin_scatter.bottom;
 
 const margin_parallel = {top: 20, right: 10, bottom: 30, left: 30},
-        width_parallel = (viewportWidth*0.5) - margin_parallel.left - margin_parallel.right,
+        width_parallel = (viewportWidth*0.55) - margin_parallel.left - margin_parallel.right,
         height_parallel = viewportHeight*0.6 - margin_parallel.top - margin_parallel.bottom;
 
 const svgScatterPlot = d3.select("#scatterplot")
