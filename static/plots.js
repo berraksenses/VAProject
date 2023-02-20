@@ -253,7 +253,7 @@ svgScatterPlot.append('g')
 
 //----Barplots
 
-const margin_bar = {top: 10, right: 30, bottom: 20, left: 50},
+const margin_bar = {top: 0, right: 0, bottom: 30, left: 50},
     width_bar = innerWidth*0.5 - margin_bar.left - margin_bar.right,
     height_bar = innerHeight *0.4 - margin_bar.top - margin_bar.bottom;
 
