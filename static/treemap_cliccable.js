@@ -31,7 +31,7 @@ function parseData(data){
         function(d) { return d.Platform; },
         function(d) { return d.Publisher; }
        );
-    console.log(groups)
+    // console.log(groups)
     root2 = d3.hierarchy(groups);
     root2.sum(function(d){return d[1]}).sort((a, b) => b.height - a.height || b.value - a.value);
 
@@ -109,17 +109,17 @@ svg
 var tree
 d3.csv('/home').then( function(data) {
     root = parseData(data)
-    console.log("rot")
-    console.log(root)
+    // console.log("rot")
+    // console.log(root)
     tree=d3.treemap()
     .size([width, height])
     .padding(2)
     .round(true)
 
     tree(root)
-    console.log("descendants")
-    console.log(root.descendants())
-    console.log("descendants")
+    // console.log("descendants")
+    // console.log(root.descendants())
+    // console.log("descendants")
     currentDepth=root.depth
     render(root.descendants())
 })

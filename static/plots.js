@@ -1,4 +1,3 @@
-console.log( )
 
 viewportHeight = window.innerHeight;
 viewportWidth = window.innerWidth;
@@ -75,9 +74,14 @@ const svgParallel = d3.select("#parallelCoordinates")
 // }    
 
 d3.csv("/home").then(function(data) {
+    //scatter plot
     // Add X axis
+
+    console.log(d3.extent(data, function(d){ return parseFloat(d.X1);}));
+    console.log(d3.extent(data, function(d){ return parseFloat(d.X2);}));
+
     const x_scatter = d3.scaleLinear()
-    .domain([-1, 28])
+    .domain(d3.extent(data, function(d){ return parseFloat(d.X1);}))
     .range([ 0, width_scatter ]);
     svgScatterPlot.append("g")
     .attr("transform", `translate(0, ${height_scatter})`)
@@ -85,7 +89,7 @@ d3.csv("/home").then(function(data) {
 
     // Add Y axis
     const y_scatter = d3.scaleLinear()
-    .domain([-8, 12])
+    .domain(d3.extent(data, function(d){ return parseFloat(d.X2);}))
     .range([ height_scatter, 0]);
     svgScatterPlot.append("g")
     .call(d3.axisLeft(y_scatter));
@@ -126,7 +130,13 @@ svgScatterPlot.append('g')
     .attr("r", 2).style("opacity",".3")
     .style("fill", function (d) { return color(d.color) } )
 
-
+    var brushTot=d3.brush()
+    .extent([[0,0],[width_scatter, height_scatter]])
+    .on("end", selected);
+    
+    svgScatterPlot.append("g")
+    .attr("class", "brushT")
+    .call(brushTot);
 //---------------------------------------
     //Parallel coordinates
       // Extract the list of dimensions we want to keep in the plot. Here I keep all except the column called Species
