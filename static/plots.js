@@ -32,7 +32,7 @@ d3.csv("/home").then(function(data) {
     console.log(d3.extent(data, function(d){ return parseFloat(d.X1);}));
     console.log(d3.extent(data, function(d){ return parseFloat(d.X2);}));
 
-    const x_scatter = d3.scaleLinear()
+    const x_scatter = d3.scaleSqrt()
     .domain(d3.extent(data, function(d){ return parseFloat(d.X1);}))
     .range([ 3, width_scatter ]);
     svgScatterPlot.append("g")
@@ -120,6 +120,24 @@ svgScatterPlot.append('g')
             svgScatterPlot.selectAll("circle").style("opacity",0.3);
             svgScatterPlot.selectAll("circle").attr("r",2);
         }
+        svgParallel.selectAll(".forepath")
+        .style("stroke","steelblue")
+
+    svgParallel.selectAll(".forepath")
+    .style("stroke",function(d){
+    if ((x_scatter(d.X1) > selection[0][0]) && (x_scatter(d.X1) < selection[1][0]) && (y_scatter(d.X2) > selection[0][1]) && (y_scatter(d.X2) < selection[1][1])) {
+        // dataSelection.push(d.id)
+        d3.select(this).raise()
+        return "red"
+        }
+        else
+        {
+        return "steelblue"
+        }
+            
+            
+            })
+
     }
 
 
@@ -130,7 +148,10 @@ svgScatterPlot.append('g')
       // Extract the list of dimensions we want to keep in the plot. Here I keep all except the column called Species
     dimensions = Object.keys(data[0]).filter(function(d) { return (d != "X1" && d != "" && d!="X2" && d!="color" && d!="Name" && d!="Publisher" )})
       // For each dimension, I build a linear scale. I store all in a y object
+      
     const y1 = {}
+    var dragging = {};
+    var line = d3.line();
     for (i in dimensions) {
         // console.log(i);
         if(dimensions[i] != "Platform" && dimensions[i] != "Genre" && dimensions[i] != "Year"){
@@ -150,45 +171,165 @@ svgScatterPlot.append('g')
                 }return p[names];}).sort();
             y1[names] = d3.scalePoint().domain(domains_sorted).range([height_parallel,0]);
         }
-}    
+}      extents = dimensions.map(function(p) { return [0,0]; });
       // Build the X scale -> it find the best position for each Y axis
     x1 = d3.scalePoint()
     .range([0, width_parallel])
     .padding(0.1)
     .domain(dimensions);
+//trial stars
 
-      // The path function take a row of the csv as input, and return x and y coordinates of the line to draw for this raw.
-    function path(d) {
-        return d3.line()(dimensions.map(function(p) { 
-            return [x1(p), y1[p](d[p])]; }));
-    }
-      // Draw the lines
-    svgParallel
-    .selectAll("myPath")
-    .data(data)
-    .join("path")
-    .attr("d",  path)
-    .style("fill", "none")
-    .style("stroke", "#69b3a2")
-    .style("opacity", 0.3)
+var background = svgParallel.append("g")
+      .attr("class", "background")
+    .selectAll("path")
+      .data(data)
+    .enter().append("path")
+      .attr("class","backpath")
+      .attr("d", path).style("fill", "none")
+      .style("stroke", "#FFb3a2");
 
-    // Draw the axis:
-    svgParallel.selectAll("myAxis")
-    // For each dimension of the dataset I add a 'g' element:
-    .data(dimensions).enter()
-    .append("g")
-    // I translate this element to its right position on the x axis
-    .attr("transform", function(d) { return "translate(" + x1(d) + ")"; })
-    // And I build the axis with the call function
-    .each(function(d) { d3.select(this).call(d3.axisLeft().scale(y1[d])); })
-    // Add axis title
+  // Add blue foreground lines for focus.
+var foreground = svgParallel.append("g")
+      .attr("class", "foreground")
+    .selectAll("path")
+      .data(data)
+    .enter().append("path")
+      .attr("class","forepath")
+      .attr("d", path).style("fill", "none")
+      .style("stroke", "#69b3a2");
+
+  // Add a group element for each dimension.
+  var g = svgParallel.selectAll(".dimension")
+      .data(dimensions)
+    .enter().append("g")
+      .attr("class", "dimension")
+      .attr("transform", function(d) {  return "translate(" + x1(d) + ")"; })
+      .call(d3.drag()
+        .subject(function(d) { return {x: x1(d)}; })
+        .on("start", function(d) {
+          dragging[d] = x1(d);
+          background.attr("visibility", "hidden");
+        })
+        .on("drag", (event, d) => 
+        {dragging[d] = Math.min(width, Math.max(0, event.x));
+          foreground.attr("d", path);
+          dimensions.sort(function(a, b) { return position(a) - position(b); });
+          x1.domain(dimensions);
+          g.attr("transform", function(d) { return "translate(" + position(d) + ")"; })
+        })
+        .on("end", (event, d) => {
+          delete dragging[d];
+          transition(d3.select(this)).attr("transform", "translate(" + x1(d) + ")");
+          transition(foreground).attr("d", path);
+          background
+              .attr("d", path)
+            .transition()
+              .delay(500)
+              .duration(0)
+              .attr("visibility", null);
+        }));
+  // Add an axis and title.
+  g.append("g")
+      .attr("class", "axis")
+      .each(function(d) {  d3.select(this).call(d3.axisLeft(y1[d]));})
+      //text does not show up because previous line breaks somehow
     .append("text")
-        .style("text-anchor", "middle")
-        .attr("y", -9)
-        .text(function(d) { return d; })
-        .style("fill", "black")
+      .style("text-anchor", "middle")
+      .attr("y", -9)
+      .text(function(d) { return d; });
+
+  // Add and store a brush for each axis.
+  g.append("g")
+      .attr("class", "brush")
+      .each(function(d) {
+        d3.select(this).call(y1[d].brush = d3.brushY().extent([[-8, 0], [8,height]]).on("brush start", brushstart).on("brush", brush_parallel_chart));
+      })
+    .selectAll("rect")
+      .attr("x", -8)
+      .attr("width", 16);
+
+function position(d) {
+  var v = dragging[d];
+  return v == null ? x1(d) : v;
+}
+
+function transition(g) {
+  return g.transition().duration(500);
+}
+
+// Returns the path for a given data point.
+function path(d) {
+  return line(dimensions.map(function(p) { return [position(p), y1[p](d[p])]; }));
+}
+
+function brushstart(event) {
+  event.sourceEvent.stopPropagation();
+}
 
 
+// Handles a brush event, toggling the display of foreground lines.
+function brush_parallel_chart(event,key) {    
+    for(var i=0;i<dimensions.length;++i){
+        if(event.target==y1[dimensions[i]].brush) {
+            console.log("f");
+            extents[i]=event.selection.map(y1[dimensions[i]].invert,y1[dimensions[i]]);
+
+        }
+    }
+
+      foreground.style("display", function(d) {
+        return dimensions.every(function(p, i) {
+            if(extents[i][0]==0 && extents[i][0]==0) {
+                return true;
+            }
+          return extents[i][1] <= d[p] && d[p] <= extents[i][0];
+        }) ? null : "none";
+      });
+}
+
+
+
+//trial ends
+
+
+
+
+
+
+
+
+    //   // The path function take a row of the csv as input, and return x and y coordinates of the line to draw for this raw.
+    // function path(d) {
+    //     return d3.line()(dimensions.map(function(p) { 
+    //         return [x1(p), y1[p](d[p])]; }));
+    // }
+    //   // Draw the lines
+    // svgParallel
+    // .selectAll("myPath")
+    // .data(data)
+    // .join("path")
+    // .attr("d",  path)
+    // .style("fill", "none")
+    // .style("stroke", "#69b3a2")
+    // .style("opacity", 0.3)
+
+    // // Draw the axis:
+    // svgParallel.selectAll("myAxis")
+    // // For each dimension of the dataset I add a 'g' element:
+    // .data(dimensions).enter()
+    // .append("g")
+    // // I translate this element to its right position on the x axis
+    // .attr("transform", function(d) { return "translate(" + x1(d) + ")"; })
+    // // And I build the axis with the call function
+    // .each(function(d) { d3.select(this).call(d3.axisLeft().scale(y1[d])); })
+    // // Add axis title
+    // .append("text")
+    //     .style("text-anchor", "middle")
+    //     .attr("y", -9)
+    //     .text(function(d) { return d; })
+    //     .style("fill", "black")
+
+//usttekini trial ende kadar uncomment
 
 //---------------------------Treemap
 
