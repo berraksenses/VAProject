@@ -1,4 +1,4 @@
-
+var dataSelection = [];
 viewportHeight = window.innerHeight;
 viewportWidth = window.innerWidth;
 
@@ -24,54 +24,6 @@ const svgParallel = d3.select("#parallelCoordinates")
     .append("g")
     .attr("transform", `translate(${margin_parallel.left}, ${margin_parallel.top})`);    
 
-    
-///----trial for stratify
-
-// function pre_stratify(data){
-//     const dataForStratify = [{name: "root", parent: null, value: null}];
-
-//     // add I children for unique genres
-//     const genres = [...new Set(data.map(k => k.Genre))];
-//     genres.forEach(k => dataForStratify.push({name: k, parent: "root", value: null}));
-    
-//     // add active inactive children for each color 
-//     const genreCounts = genres.reduce((a, g) => {
-//       const genreItems = dataset.filter(k => k.Genre === g).length; 
-//     //   const actives = genreItems.filter(k => k.isActive === true).length;
-//     //   const inactives = colorItems.filter(k => k.isActive === false).length;
-//       a.push({
-//         name: "active",
-//         parent: g,
-//         value: genreItems
-//       });
-//     //   a.push({
-//     //     name: "inactive",
-//     //     parent: c,
-//     //     value: inactives
-//     //   });
-//       return a;
-//     }, []);
-//     genreCounts.forEach(k => dataForStratify.push(k));
-    
-//     console.log(dataForStratify);
-// }
-
-//trial finishes
-
-
-
-// function create_hierarchy(data) {
-//     var tree_data = [{"name": "root", "parent": null, "value": null}];
-//     genres = [];
-//     platform = [];
-//     publisher = [];
-//     for (let i = 0; i < data.length; i++) {
-//         if(genres.includes(item,data[i].Genre)){
-//             tree_data.n
-//         }
-//     } 
-//     console.log(data.columns);       
-// }    
 
 d3.csv("/home").then(function(data) {
     //scatter plot
@@ -82,7 +34,7 @@ d3.csv("/home").then(function(data) {
 
     const x_scatter = d3.scaleLinear()
     .domain(d3.extent(data, function(d){ return parseFloat(d.X1);}))
-    .range([ 0, width_scatter ]);
+    .range([ 3, width_scatter ]);
     svgScatterPlot.append("g")
     .attr("transform", `translate(0, ${height_scatter})`)
     .call(d3.axisBottom(x_scatter));
@@ -97,7 +49,6 @@ d3.csv("/home").then(function(data) {
     var color = d3.scaleOrdinal()
     .domain(["red", "green" ])
     .range([ "#EE4B2B", "#41924B"])
-
 
   var legend = svgScatterPlot.selectAll(".legend")
   .data(["Below Average Sales", "Above Average sale"])//hard coding the labels as the datset may have or may not have but legend should be complete.
@@ -137,6 +88,43 @@ svgScatterPlot.append('g')
     svgScatterPlot.append("g")
     .attr("class", "brushT")
     .call(brushTot);
+
+    function selected(event){
+        dataSelection=[]
+        var selection= event.selection;
+        console.log(selection!=null);
+        if (selection != null){
+            console.log(console.log("selection is not null"));
+            svgScatterPlot.selectAll("circle").attr("r",function(d){
+                if ((x_scatter(d.X1) > selection[0][0]) && (x_scatter(d.X1) < selection[1][0]) && (y_scatter(d.X2) > selection[0][1]) && (y_scatter(d.X2) < selection[1][1])) {
+                    dataSelection.push(d.id)
+                    return "4"
+                }
+                else
+                {
+                    return "2"
+                }
+            })
+            svgScatterPlot.selectAll("circle").style("opacity",function(d){
+                if ((x_scatter(d.X1) > selection[0][0]) && (x_scatter(d.X1) < selection[1][0]) && (y_scatter(d.X2) > selection[0][1]) && (y_scatter(d.X2) < selection[1][1])) {
+                    dataSelection.push(d.id)
+                    return "1"
+                }
+                else
+                {
+                    return "0.2"
+                }
+            })
+       }
+        else{
+            svgScatterPlot.selectAll("circle").style("opacity",0.3);
+            svgScatterPlot.selectAll("circle").attr("r",2);
+        }
+    }
+
+
+
+
 //---------------------------------------
     //Parallel coordinates
       // Extract the list of dimensions we want to keep in the plot. Here I keep all except the column called Species
