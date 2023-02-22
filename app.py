@@ -14,7 +14,7 @@ from flask_cors import CORS
 
 def do_pca(date_from, date_to):
   
-  data = pd.read_csv("vgsales.csv")
+  data = pd.read_csv("vgsales.csv").iloc[:1000]
   if(date_from == date_to):
     pre_data = data[data["Year"]==int(date_from)]
 
@@ -36,9 +36,10 @@ def do_pca(date_from, date_to):
   df_pca.rename(columns={1: "X2"}, inplace=True)
   df_pca['color'] = colors
   df_pca['Name'] = pre_data['Name']
-  df_pca['Platform'] = pre_data['Platform']
-  df_pca['Year'] = pre_data['Year']
+  df_pca['Platform'] = pre_data['Platform']  
   df_pca['Genre'] = pre_data['Genre']
+  df_pca['Year'] = pre_data['Year']
+
   df_pca['Publisher'] = pre_data['Publisher']
   df_pca['NA_Sales'] = pre_data['NA_Sales']
   df_pca['EU_Sales'] = pre_data['EU_Sales']
@@ -46,7 +47,7 @@ def do_pca(date_from, date_to):
   df_pca['Other_Sales'] = pre_data['Other_Sales']
   df_pca['Global_Sales'] = pre_data['Global_Sales']
   #Genre,Publisher,NA_Sales,EU_Sales,JP_Sales,Other_Sales,Global_Sales
-
+  print(df_pca.shape)
   # d = df_pca.append(pre_data)
   return df_pca
 

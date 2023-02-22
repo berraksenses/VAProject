@@ -134,29 +134,19 @@ svgScatterPlot.append('g')
         {
         return "steelblue"
         }
-            
-            
             })
-
     }
-
-
-
-
-//---------------------------------------
+  //---------------------------------------
     //Parallel coordinates
       // Extract the list of dimensions we want to keep in the plot. Here I keep all except the column called Species
     dimensions = Object.keys(data[0]).filter(function(d) { return (d != "X1" && d != "" && d!="X2" && d!="color" && d!="Name" && d!="Publisher" )})
       // For each dimension, I build a linear scale. I store all in a y object
-      
     const y1 = {}
     var dragging = {};
     var line = d3.line();
     for (i in dimensions) {
-        // console.log(i);
         if(dimensions[i] != "Platform" && dimensions[i] != "Genre" && dimensions[i] != "Year"){
             names = dimensions[i]
-            // console.log(names);
             y1[names] = d3.scaleLinear()
                 .domain(d3.extent(data, function(d) { 
                     // console.log(d[names])
@@ -171,10 +161,12 @@ svgScatterPlot.append('g')
                 }return p[names];}).sort();
             y1[names] = d3.scalePoint().domain(domains_sorted).range([height_parallel,0]);
         }
-}      extents = dimensions.map(function(p) { return [0,0]; });
+  }
+
+
+    extents = dimensions.map(function(p) {return [0,0];});
       // Build the X scale -> it find the best position for each Y axis
-    x1 = d3.scalePoint()
-    .range([0, width_parallel])
+    x1 = d3.scalePoint().range([0, width_parallel])
     .padding(0.1)
     .domain(dimensions);
 //trial stars
@@ -191,19 +183,26 @@ var background = svgParallel.append("g")
   // Add blue foreground lines for focus.
 var foreground = svgParallel.append("g")
       .attr("class", "foreground")
-    .selectAll("path")
+      .selectAll("path")
       .data(data)
-    .enter().append("path")
+      .enter().append("path")
       .attr("class","forepath")
       .attr("d", path).style("fill", "none")
       .style("stroke", "#69b3a2");
 
   // Add a group element for each dimension.
-  var g = svgParallel.selectAll(".dimension")
-      .data(dimensions)
+var g_before3 = svgParallel.selectAll(".dimension1")
+      .data(dimensions.slice(0,3))
+      .enter().append("g")
+      .attr("class", "dimension1")
+      .attr("transform", function(d) { return "translate(" + x1(d) + ")"; })
+
+
+  var g_after3 = svgParallel.selectAll(".dimension2")
+      .data(dimensions.slice(3))
     .enter().append("g")
-      .attr("class", "dimension")
-      .attr("transform", function(d) {  return "translate(" + x1(d) + ")"; })
+      .attr("class", "dimension2")
+      .attr("transform", function(d) { return "translate(" + x1(d) + ")"; })
       .call(d3.drag()
         .subject(function(d) { return {x: x1(d)}; })
         .on("start", function(d) {
@@ -229,7 +228,7 @@ var foreground = svgParallel.append("g")
               .attr("visibility", null);
         }));
   // Add an axis and title.
-  g.append("g")
+  g_after3.append("g")
       .attr("class", "axis")
       .each(function(d) {  d3.select(this).call(d3.axisLeft(y1[d]));})
       //text does not show up because previous line breaks somehow
@@ -238,8 +237,17 @@ var foreground = svgParallel.append("g")
       .attr("y", -9)
       .text(function(d) { return d; });
 
+  g_before3.append("g")
+  .attr("class", "axis")
+  .each(function(d) {  d3.select(this).call(d3.axisLeft(y1[d]));})
+  //text does not show up because previous line breaks somehow
+.append("text")
+  .style("text-anchor", "middle")
+  .attr("y", -9)
+  .text(function(d) { return d; });
+
   // Add and store a brush for each axis.
-  g.append("g")
+  g_after3.append("g")
       .attr("class", "brush")
       .each(function(d) {
         d3.select(this).call(y1[d].brush = d3.brushY().extent([[-8, 0], [8,height]]).on("brush start", brushstart).on("brush", brush_parallel_chart));
