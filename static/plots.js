@@ -48,7 +48,7 @@ d3.csv("/home").then(function (data) {
   svgScatterPlot.append("g")
     .call(d3.axisLeft(y_scatter));
 
-  var color = d3.scaleOrdinal()
+  var color_mean = d3.scaleOrdinal()
     .domain(["red", "green"])
     .range(["#EE4B2B", "#41924B"])
 
@@ -63,7 +63,7 @@ d3.csv("/home").then(function (data) {
     .attr("x", width_scatter - 18)
     .attr("width", 18)
     .attr("height", 18)
-    .style("fill", function (d) { return color(d) });
+    .style("fill", function (d) { return color_mean(d) });
 
   // draw legend text
   legend.append("text")
@@ -81,10 +81,10 @@ d3.csv("/home").then(function (data) {
     .attr("cx", function (d) { return x_scatter(d.X1); })
     .attr("cy", function (d) { return y_scatter(d.X2); })
     .attr("r", 2).style("opacity", ".3")
-    .style("fill", function (d) { return color(d.color) })
+    .style("fill", function (d) { return color_mean(d.color) })
 
   var brushTot = d3.brush()
-    .extent([[0, 0], [width_scatter, height_scatter]])
+    .extent([[0, 0], [width_scatter, height_scatter]]).on("brush start",brushstart)
     .on("end", selected);
 
   svgScatterPlot.append("g")
@@ -93,6 +93,7 @@ d3.csv("/home").then(function (data) {
 
   function selected(event) {
     var selection = event.selection;
+    svgParallel.selectAll("path").style("stroke","steelblue").lower()
     if (selection != null) {
       svgScatterPlot.selectAll("circle").attr("r", function (d) {
         if ((x_scatter(d.X1) > selection[0][0]) && (x_scatter(d.X1) < selection[1][0]) && (y_scatter(d.X2) > selection[0][1]) && (y_scatter(d.X2) < selection[1][1])) {
@@ -110,7 +111,7 @@ d3.csv("/home").then(function (data) {
           return "0.2"
         }
       })
-      svgParallel.selectAll(".forepath")
+      svgParallel.selectAll("path")
         .style("stroke", function (d) {
           if ((x_scatter(d.X1) > selection[0][0]) && (x_scatter(d.X1) < selection[1][0]) && (y_scatter(d.X2) > selection[0][1]) && (y_scatter(d.X2) < selection[1][1])) {
             dataSelection.push(d.id)
@@ -118,15 +119,17 @@ d3.csv("/home").then(function (data) {
             return "red"
           }
           else {
+            d3.select(this).lower()
             return "steelblue"
           }
         })
     }
     else {
+      console.log("spoo nqui")
       svgScatterPlot.selectAll("circle").style("opacity", 0.3);
       svgScatterPlot.selectAll("circle").attr("r", 2);
       // svgParallel.selectAll(".forepath").style("display",false);
-      svgParallel.selectAll(".forepath").style("stroke", "steelblue")
+      svgParallel.selectAll("path").style("stroke", "steelblue")
     }
   }
   //---------------------------------------
@@ -196,30 +199,7 @@ d3.csv("/home").then(function (data) {
     .enter().append("g")
     .attr("class", "dimension2")
     .attr("transform", function (d) { return "translate(" + x1(d) + ")"; })
-    .call(d3.drag()
-      .subject(function (d) { return { x: x1(d) }; })
-      .on("start", function (d) {
-        dragging[d] = x1(d);
-        background.attr("visibility", "hidden");
-      })
-      .on("drag", (event, d) => {
-        dragging[d] = Math.min(width, Math.max(0, event.x));
-        foreground.attr("d", path);
-        dimensions.sort(function (a, b) { return position(a) - position(b); });
-        x1.domain(dimensions);
-        g.attr("transform", function (d) { return "translate(" + position(d) + ")"; })
-      })
-      .on("end", (event, d) => {
-        delete dragging[d];
-        transition(d3.select(this)).attr("transform", "translate(" + x1(d) + ")");
-        transition(foreground).attr("d", path);
-        background
-          .attr("d", path)
-          .transition()
-          .delay(500)
-          .duration(0)
-          .attr("visibility", null);
-      }));
+    
   // Add an axis and title.
   g_after3.append("g")
     .attr("class", "axis")
@@ -268,6 +248,7 @@ d3.csv("/home").then(function (data) {
   }
   // Handles a brush event, toggling the display of foreground lines.
   function brush_parallel_chart(event, i) {
+    console.log("stai eseguendo anche questo")
     // svgParallel.selectAll(".forepath").style("display",true)
     if (event.selection != null) {
       svgParallel.selectAll(".backpath").style("stroke", "#FFb3a2");
@@ -346,17 +327,6 @@ d3.csv("/home").then(function (data) {
 
       }
       else {
-
-        foreground.style("display", function (d) {
-          return dimensions.every(function (p, i) {
-
-            if (extents[i][0] == 0) {
-              return true;
-            }
-            return extents[i][1] <= d[p] && d[p] <= extents[i][0];
-          }) ? null : "none";
-
-        });
 
         var dneme;
         svgScatterPlot.selectAll("circle").attr("r", function (d) {
@@ -541,11 +511,19 @@ d3.csv("/home").then(function (data) {
   var rollupDatas = [];
   const subgroups = data.columns.slice(9, 13);
 
+  const color = d3.scaleOrdinal()
+  .domain(subgroups)
+  .range(['#e41a1c', '#1f77b4', '#ff7f0e', '#2ca02c'])
+
+
   d3.select("#checkbox").selectAll("input")
     .data(subgroups)
     .enter().append("label")
     .text(function (d) { return d; })
-
+    .style("color","white")
+    .style("background-color", function (d) {  
+      console.log(color(d));
+      return color(d)})
     .append("input")
     .attr("checked", true)
     .attr("type", "checkbox")
@@ -570,8 +548,7 @@ d3.csv("/home").then(function (data) {
         data,
         xs => rollupFnc(xs),
         d => d.Genre
-      )
-        .map(([k, v]) => ({ Genre: k, Sales: v }));
+      ).map(([k, v]) => ({ Genre: k, Sales: v }));
 
       barData = [];
       for (let i = 0; i < output_Sales.length; i++) {
@@ -585,13 +562,13 @@ d3.csv("/home").then(function (data) {
       }
       console.log(barData)
       //stack the data? --> stack per subgroup
+
       stackedData = d3.stack()
         .keys(subgroups)
         (barData);
         
         // svg.selectAll("rect.negative").remove()
-        svgBarplot.selectAll("rect").remove();
-      // svgBarplot.exit().remove()
+      svgBarplot.selectAll("rect").remove();
 
       svgBarplot.append("g").selectAll("g")
         // Enter in the stack data = loop key per key = group per group
@@ -676,11 +653,6 @@ d3.csv("/home").then(function (data) {
   stackedData = d3.stack()
     .keys(subgroups)
     (barData)
-  // color palette = one color per subgroup
-  color = d3.scaleOrdinal()
-    .domain(subgroups)
-    .range(['#e41a1c', '#1f77b4', '#ff7f0e', '#2ca02c'])
-
 
   // Show the bars
   svgBarplot.append("g")
@@ -696,6 +668,16 @@ d3.csv("/home").then(function (data) {
     .attr("x", d => x_bar(d.data.Genre))
     .attr("y", d => y_bar(d[1]))
     .attr("height", d => y_bar(d[0]) - y_bar(d[1]))
-    .attr("width", x_bar.bandwidth())
+    .attr("width", x_bar.bandwidth());
+
+    svgBarplot.append("text")
+    .attr("class", "y label")
+    .attr("text-anchor", "end")
+    .attr("y", 6)
+    .attr("x","19")
+    .attr("dy", ".95em")
+    .attr("transform", "rotate(-90)")
+    .text("life expectancy (years)");
+
     
 });
