@@ -8,9 +8,6 @@ var NA_checked = true;
 var EU_checked = true;
 var JP_checked = true;
 var Other_checked = true;
-
-var barGroup;
-var bars;
 const margin_scatter = { top: 20, right: 30, bottom: 30, left: 30 },
   width_scatter = (viewportWidth * 0.4) - margin_scatter.left - margin_scatter.right,
   height_scatter = viewportHeight * 0.6 - margin_scatter.top - margin_scatter.bottom;
@@ -548,6 +545,7 @@ d3.csv("/home").then(function (data) {
     .data(subgroups)
     .enter().append("label")
     .text(function (d) { return d; })
+
     .append("input")
     .attr("checked", true)
     .attr("type", "checkbox")
@@ -590,26 +588,24 @@ d3.csv("/home").then(function (data) {
       stackedData = d3.stack()
         .keys(subgroups)
         (barData);
+        
+        // svg.selectAll("rect.negative").remove()
+        svgBarplot.selectAll("rect").remove();
+      // svgBarplot.exit().remove()
 
-      barGroup = svgBarplot.append("g").selectAll("g");
+      svgBarplot.append("g").selectAll("g")
         // Enter in the stack data = loop key per key = group per group
-        bars = barGroup.data(stackedData)
+        .data(stackedData)
         .join("g")
         .attr("fill", d => color(d.key))
         .selectAll("rect")
         // enter a second time = loop subgroup per subgroup to add all rectangles
-        .data(d => d);
-
-        bars.join("rect")
+        .data(d => d)
+        .join("rect")
         .attr("x", d => x_bar(d.data.Genre))
         .attr("y", d => y_bar(d[1]))
         .attr("height", d => y_bar(d[0]) - y_bar(d[1]))
-        .attr("width", x_bar.bandwidth());
-        bars.exit().remove();
-        barGroup.exit()
-        .remove();
-
-        
+        .attr("width", x_bar.bandwidth())
     })
   // .attr("onClick", "change(this)")
   // .attr("for", function(d,i) { return i; })
@@ -685,6 +681,7 @@ d3.csv("/home").then(function (data) {
     .domain(subgroups)
     .range(['#e41a1c', '#1f77b4', '#ff7f0e', '#2ca02c'])
 
+
   // Show the bars
   svgBarplot.append("g")
     .selectAll("g")
@@ -700,4 +697,5 @@ d3.csv("/home").then(function (data) {
     .attr("y", d => y_bar(d[1]))
     .attr("height", d => y_bar(d[0]) - y_bar(d[1]))
     .attr("width", x_bar.bandwidth())
+    
 });
