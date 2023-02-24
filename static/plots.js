@@ -1,421 +1,427 @@
 var dataSelection = [];
+var output_Sales;
 viewportHeight = window.innerHeight;
 viewportWidth = window.innerWidth;
+var stackedData;
 
-const margin_scatter = {top: 20, right: 30 , bottom: 30, left: 30},
-        width_scatter = (viewportWidth*0.4) - margin_scatter.left - margin_scatter.right,
-        height_scatter = viewportHeight*0.6 - margin_scatter.top - margin_scatter.bottom;
+var NA_checked = true;
+var EU_checked = true;
+var JP_checked = true;
+var Other_checked = true;
 
-const margin_parallel = {top: 20, right: 10, bottom: 30, left: 30},
-        width_parallel = (viewportWidth*0.55) - margin_parallel.left - margin_parallel.right,
-        height_parallel = viewportHeight*0.6 - margin_parallel.top - margin_parallel.bottom;
+var barGroup;
+var bars;
+const margin_scatter = { top: 20, right: 30, bottom: 30, left: 30 },
+  width_scatter = (viewportWidth * 0.4) - margin_scatter.left - margin_scatter.right,
+  height_scatter = viewportHeight * 0.6 - margin_scatter.top - margin_scatter.bottom;
+
+const margin_parallel = { top: 20, right: 10, bottom: 30, left: 30 },
+  width_parallel = (viewportWidth * 0.55) - margin_parallel.left - margin_parallel.right,
+  height_parallel = viewportHeight * 0.6 - margin_parallel.top - margin_parallel.bottom;
 
 const svgScatterPlot = d3.select("#scatterplot")
-    .append("svg")
-    .attr("width", width_scatter + margin_scatter.left + margin_scatter.right)
-    .attr("height", height_scatter + margin_scatter.top + margin_scatter.bottom)
-    .append("g")
-    .attr("transform", `translate(${margin_scatter.left}, ${margin_scatter.top})`);
-    
+  .append("svg")
+  .attr("width", width_scatter + margin_scatter.left + margin_scatter.right)
+  .attr("height", height_scatter + margin_scatter.top + margin_scatter.bottom)
+  .append("g")
+  .attr("transform", `translate(${margin_scatter.left}, ${margin_scatter.top})`);
+
 const svgParallel = d3.select("#parallelCoordinates")
-    .append("svg")
-    .attr("width", width_parallel + margin_parallel.left + margin_parallel.right)
-    .attr("height", height_parallel + margin_parallel.top + margin_parallel.bottom)
-    .append("g")
-    .attr("transform", `translate(${margin_parallel.left}, ${margin_parallel.top})`);    
+  .append("svg")
+  .attr("width", width_parallel + margin_parallel.left + margin_parallel.right)
+  .attr("height", height_parallel + margin_parallel.top + margin_parallel.bottom)
+  .append("g")
+  .attr("transform", `translate(${margin_parallel.left}, ${margin_parallel.top})`);
 
-const dimNames = {"NA_Sales": 3,"EU_Sales": 4, "JP_Sales": 5,"Other_Sales": 6,"Global_Sales":7};
+const dimNames = { "NA_Sales": 3, "EU_Sales": 4, "JP_Sales": 5, "Other_Sales": 6, "Global_Sales": 7 };
 
-d3.csv("/home").then(function(data) {
-//scatter plot
-    const x_scatter = d3.scaleSqrt()
-    .domain(d3.extent(data, function(d){ return parseFloat(d.X1);}))
-    .range([ 3, width_scatter ]);
-    svgScatterPlot.append("g")
+d3.csv("/home").then(function (data) {
+  //scatter plot
+  const x_scatter = d3.scaleSqrt()
+    .domain(d3.extent(data, function (d) { return parseFloat(d.X1); }))
+    .range([3, width_scatter]);
+  svgScatterPlot.append("g")
     .attr("transform", `translate(0, ${height_scatter})`)
     .call(d3.axisBottom(x_scatter));
 
-    // Add Y axis
-    const y_scatter = d3.scaleLinear()
-    .domain(d3.extent(data, function(d){ return parseFloat(d.X2);}))
-    .range([ height_scatter, 0]);
-    svgScatterPlot.append("g")
+  // Add Y axis
+  const y_scatter = d3.scaleLinear()
+    .domain(d3.extent(data, function (d) { return parseFloat(d.X2); }))
+    .range([height_scatter, 0]);
+  svgScatterPlot.append("g")
     .call(d3.axisLeft(y_scatter));
 
-    var color = d3.scaleOrdinal()
-    .domain(["red", "green" ])
-    .range([ "#EE4B2B", "#41924B"])
+  var color = d3.scaleOrdinal()
+    .domain(["red", "green"])
+    .range(["#EE4B2B", "#41924B"])
 
   var legend = svgScatterPlot.selectAll(".legend")
-  .data(["Below Average Sales", "Above Average sale"])//hard coding the labels as the datset may have or may not have but legend should be complete.
-  .enter().append("g")
-  .attr("class", "legend")
-  .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+    .data(["Below Average Sales", "Above Average sale"])//hard coding the labels as the datset may have or may not have but legend should be complete.
+    .enter().append("g")
+    .attr("class", "legend")
+    .attr("transform", function (d, i) { return "translate(0," + i * 20 + ")"; });
 
-// draw legend colored rectangles
-legend.append("rect")
-  .attr("x", width_scatter - 18)
-  .attr("width", 18)
-  .attr("height", 18)
-  .style("fill", function(d){return color(d)});
+  // draw legend colored rectangles
+  legend.append("rect")
+    .attr("x", width_scatter - 18)
+    .attr("width", 18)
+    .attr("height", 18)
+    .style("fill", function (d) { return color(d) });
 
-// draw legend text
-legend.append("text")
-  .attr("x", width_scatter - 24)
-  .attr("y", 9)
-  .attr("dy", ".35em")
-  .style("text-anchor", "end")
-  .text(function(d) { return d;});
+  // draw legend text
+  legend.append("text")
+    .attr("x", width_scatter - 24)
+    .attr("y", 9)
+    .attr("dy", ".35em")
+    .style("text-anchor", "end")
+    .text(function (d) { return d; });
 
-    // Add dots
-svgScatterPlot.append('g')
+  // Add dots
+  svgScatterPlot.append('g')
     .selectAll("dot")
     .data(data)
     .join("circle")
-    .attr("cx", function (d) { return x_scatter(d.X1); } )
-    .attr("cy", function (d) { return y_scatter(d.X2); } )
-    .attr("r", 2).style("opacity",".3")
-    .style("fill", function (d) { return color(d.color) } )
+    .attr("cx", function (d) { return x_scatter(d.X1); })
+    .attr("cy", function (d) { return y_scatter(d.X2); })
+    .attr("r", 2).style("opacity", ".3")
+    .style("fill", function (d) { return color(d.color) })
 
-    var brushTot=d3.brush()
-    .extent([[0,0],[width_scatter, height_scatter]])
+  var brushTot = d3.brush()
+    .extent([[0, 0], [width_scatter, height_scatter]])
     .on("end", selected);
-    
-    svgScatterPlot.append("g")
+
+  svgScatterPlot.append("g")
     .attr("class", "brushT")
     .call(brushTot);
 
-    function selected(event){
-        var selection= event.selection;
-        if (selection != null){
-            svgScatterPlot.selectAll("circle").attr("r",function(d){
-                if ((x_scatter(d.X1) > selection[0][0]) && (x_scatter(d.X1) < selection[1][0]) && (y_scatter(d.X2) > selection[0][1]) && (y_scatter(d.X2) < selection[1][1])) {
-                    return "4"
-                }
-                else
-                {
-                    return "2"
-                }
-            })
-            svgScatterPlot.selectAll("circle").style("opacity",function(d){
-                if ((x_scatter(d.X1) > selection[0][0]) && (x_scatter(d.X1) < selection[1][0]) && (y_scatter(d.X2) > selection[0][1]) && (y_scatter(d.X2) < selection[1][1])) {
-                    return "1"
-                }
-                else
-                {
-                    return "0.2"
-                }
-            })
-            svgParallel.selectAll(".forepath")
-            .style("stroke",function(d){
-            if ((x_scatter(d.X1) > selection[0][0]) && (x_scatter(d.X1) < selection[1][0]) && (y_scatter(d.X2) > selection[0][1]) && (y_scatter(d.X2) < selection[1][1])) {
-                // dataSelection.push(d.id)
-                d3.select(this).raise()
-                return "red"
-                }
-                else
-                {
-                return "steelblue"
-                }
-                    })
-       }
-        else{
-            svgScatterPlot.selectAll("circle").style("opacity",0.3);
-            svgScatterPlot.selectAll("circle").attr("r",2);
-            // svgParallel.selectAll(".forepath").style("display",false);
-            svgParallel.selectAll(".forepath").style("stroke","steelblue")
-        }
-
-   
-    }
-  //---------------------------------------
-    //Parallel coordinates
-      // Extract the list of dimensions we want to keep in the plot. Here I keep all except the column called Species
-    dimensions = Object.keys(data[0]).filter(function(d) { return (d != "X1" && d != "" && d!="X2" && d!="color" && d!="Name" && d!="Publisher" )})
-      // For each dimension, I build a linear scale. I store all in a y object
-    const y1 = {}
-    var dragging = {};
-    var line = d3.line();
-    for (i in dimensions) {
-        if(dimensions[i] != "Platform" && dimensions[i] != "Genre" && dimensions[i] != "Year"){
-            names = dimensions[i]
-            y1[names] = d3.scaleLinear()
-                .domain(d3.extent(data, function(d) { 
-                    // console.log(d[names])
-                    return +d[names]; }) )
-                .range([height_parallel, 0])
+  function selected(event) {
+    var selection = event.selection;
+    if (selection != null) {
+      svgScatterPlot.selectAll("circle").attr("r", function (d) {
+        if ((x_scatter(d.X1) > selection[0][0]) && (x_scatter(d.X1) < selection[1][0]) && (y_scatter(d.X2) > selection[0][1]) && (y_scatter(d.X2) < selection[1][1])) {
+          return "4"
         }
         else {
-            names = dimensions[i]
-            domains_sorted = data.map(function(p){
-                if(names == "Year"){
-                    p[names] = p[names].substring(0,p[names].length-2);
-                }return p[names];}).sort();
-            y1[names] = d3.scalePoint().domain(domains_sorted).range([height_parallel,0]);
+          return "2"
         }
+      })
+      svgScatterPlot.selectAll("circle").style("opacity", function (d) {
+        if ((x_scatter(d.X1) > selection[0][0]) && (x_scatter(d.X1) < selection[1][0]) && (y_scatter(d.X2) > selection[0][1]) && (y_scatter(d.X2) < selection[1][1])) {
+          return "1"
+        }
+        else {
+          return "0.2"
+        }
+      })
+      svgParallel.selectAll(".forepath")
+        .style("stroke", function (d) {
+          if ((x_scatter(d.X1) > selection[0][0]) && (x_scatter(d.X1) < selection[1][0]) && (y_scatter(d.X2) > selection[0][1]) && (y_scatter(d.X2) < selection[1][1])) {
+            dataSelection.push(d.id)
+            d3.select(this).raise()
+            return "red"
+          }
+          else {
+            return "steelblue"
+          }
+        })
+    }
+    else {
+      svgScatterPlot.selectAll("circle").style("opacity", 0.3);
+      svgScatterPlot.selectAll("circle").attr("r", 2);
+      // svgParallel.selectAll(".forepath").style("display",false);
+      svgParallel.selectAll(".forepath").style("stroke", "steelblue")
+    }
   }
-
-
-    extents = dimensions.map(function(p) {return [0,0];});
-      // Build the X scale -> it find the best position for each Y axis
-    x1 = d3.scalePoint().range([0, width_parallel])
+  //---------------------------------------
+  //Parallel coordinates
+  // Extract the list of dimensions we want to keep in the plot. Here I keep all except the column called Species
+  dimensions = Object.keys(data[0]).filter(function (d) { return (d != "X1" && d != "" && d != "X2" && d != "color" && d != "Name" && d != "Publisher") })
+  // For each dimension, I build a linear scale. I store all in a y object
+  const y1 = {}
+  var dragging = {};
+  var line = d3.line();
+  for (i in dimensions) {
+    if (dimensions[i] != "Platform" && dimensions[i] != "Genre" && dimensions[i] != "Year") {
+      names = dimensions[i]
+      y1[names] = d3.scaleLinear()
+        .domain(d3.extent(data, function (d) {
+          // console.log(d[names])
+          return +d[names];
+        }))
+        .range([height_parallel, 0])
+    }
+    else {
+      names = dimensions[i]
+      domains_sorted = data.map(function (p) {
+        if (names == "Year") {
+          p[names] = p[names].substring(0, p[names].length - 2);
+        } return p[names];
+      }).sort();
+      y1[names] = d3.scalePoint().domain(domains_sorted).range([height_parallel, 0]);
+    }
+  }
+  extents = dimensions.map(function (p) { return [0, 0]; });
+  // Build the X scale -> it find the best position for each Y axis
+  x1 = d3.scalePoint().range([0, width_parallel])
     .padding(0.1)
     .domain(dimensions);
-//trial stars
+  //trial stars
 
-var background = svgParallel.append("g")
-      .attr("class", "background")
+  var background = svgParallel.append("g")
+    .attr("class", "background")
     .selectAll("path")
-      .data(data)
+    .data(data)
     .enter().append("path")
-      .attr("class","backpath")
-      .attr("d", path).style("fill", "none")
-      .style("stroke", "#FFb3a2");
+    .attr("class", "backpath")
+    .attr("d", path).style("fill", "none")
+    .style("stroke", "#FFb3a2");
 
   // Add blue foreground lines for focus.
-var foreground = svgParallel.append("g")
-      .attr("class", "foreground")
-      .selectAll("path")
-      .data(data)
-      .enter().append("path")
-      .attr("class","forepath")
-      .attr("d", path).style("fill", "none")
-      .style("stroke", "#69b3a2");
+  var foreground = svgParallel.append("g")
+    .attr("class", "foreground")
+    .selectAll("path")
+    .data(data)
+    .enter().append("path")
+    .attr("class", "forepath")
+    .attr("d", path).style("fill", "none")
+    .style("stroke", "#69b3a2");
 
   // Add a group element for each dimension.
-var g_before3 = svgParallel.selectAll(".dimension1")
-      .data(dimensions.slice(0,3))
-      .enter().append("g")
-      .attr("class", "dimension1")
-      .attr("transform", function(d) { return "translate(" + x1(d) + ")"; })
+  var g_before3 = svgParallel.selectAll(".dimension1")
+    .data(dimensions.slice(0, 3))
+    .enter().append("g")
+    .attr("class", "dimension1")
+    .attr("transform", function (d) { return "translate(" + x1(d) + ")"; })
 
 
   var g_after3 = svgParallel.selectAll(".dimension2")
-      .data(dimensions.slice(3))
+    .data(dimensions.slice(3))
     .enter().append("g")
-      .attr("class", "dimension2")
-      .attr("transform", function(d) { return "translate(" + x1(d) + ")"; })
-      .call(d3.drag()
-        .subject(function(d) { return {x: x1(d)}; })
-        .on("start", function(d) {
-          dragging[d] = x1(d);
-          background.attr("visibility", "hidden");
-        })
-        .on("drag", (event, d) => 
-        {dragging[d] = Math.min(width, Math.max(0, event.x));
-          foreground.attr("d", path);
-          dimensions.sort(function(a, b) { return position(a) - position(b); });
-          x1.domain(dimensions);
-          g.attr("transform", function(d) { return "translate(" + position(d) + ")"; })
-        })
-        .on("end", (event, d) => {
-          delete dragging[d];
-          transition(d3.select(this)).attr("transform", "translate(" + x1(d) + ")");
-          transition(foreground).attr("d", path);
-          background
-              .attr("d", path)
-            .transition()
-              .delay(500)
-              .duration(0)
-              .attr("visibility", null);
-        }));
+    .attr("class", "dimension2")
+    .attr("transform", function (d) { return "translate(" + x1(d) + ")"; })
+    .call(d3.drag()
+      .subject(function (d) { return { x: x1(d) }; })
+      .on("start", function (d) {
+        dragging[d] = x1(d);
+        background.attr("visibility", "hidden");
+      })
+      .on("drag", (event, d) => {
+        dragging[d] = Math.min(width, Math.max(0, event.x));
+        foreground.attr("d", path);
+        dimensions.sort(function (a, b) { return position(a) - position(b); });
+        x1.domain(dimensions);
+        g.attr("transform", function (d) { return "translate(" + position(d) + ")"; })
+      })
+      .on("end", (event, d) => {
+        delete dragging[d];
+        transition(d3.select(this)).attr("transform", "translate(" + x1(d) + ")");
+        transition(foreground).attr("d", path);
+        background
+          .attr("d", path)
+          .transition()
+          .delay(500)
+          .duration(0)
+          .attr("visibility", null);
+      }));
   // Add an axis and title.
   g_after3.append("g")
-      .attr("class", "axis")
-      .each(function(d) {  d3.select(this).call(d3.axisLeft(y1[d]));})
-      //text does not show up because previous line breaks somehow
+    .attr("class", "axis")
+    .each(function (d) { d3.select(this).call(d3.axisLeft(y1[d])); })
+    //text does not show up because previous line breaks somehow
     .append("text")
-      .style("text-anchor", "middle")
-      .attr("y", -9)
-      .text(function(d) { return d; });
+    .style("text-anchor", "middle")
+    .attr("y", -9)
+    .text(function (d) { return d; });
 
   g_before3.append("g")
-  .attr("class", "axis")
-  .each(function(d) {  d3.select(this).call(d3.axisLeft(y1[d]));})
-  //text does not show up because previous line breaks somehow
-.append("text")
-  .style("text-anchor", "middle")
-  .attr("y", -9)
-  .text(function(d) { return d; });
+    .attr("class", "axis")
+    .each(function (d) { d3.select(this).call(d3.axisLeft(y1[d])); })
+    //text does not show up because previous line breaks somehow
+    .append("text")
+    .style("text-anchor", "middle")
+    .attr("y", -9)
+    .text(function (d) { return d; });
 
   // Add and store a brush for each axis.
   g_after3.append("g")
-      .attr("class", "brush")
-      .each(function(d) {
-        d3.select(this).call(y1[d].brush = d3.brushY().extent([[0, 0], [8,height_parallel]]).on("brush start", brushstart).on("brush end", brush_parallel_chart));
-      })
+    .attr("class", "brush")
+    .each(function (d) {
+      d3.select(this).call(y1[d].brush = d3.brushY().extent([[0, 0], [8, height_parallel]]).on("brush start", brushstart).on("brush end", brush_parallel_chart));
+    })
     .selectAll("rect")
-      .attr("x", -8)
-      .attr("width", 16);
+    .attr("x", -8)
+    .attr("width", 16);
 
-function position(d) {
-  var v = dragging[d];
-  return v == null ? x1(d) : v;
-}
+  function position(d) {
+    var v = dragging[d];
+    return v == null ? x1(d) : v;
+  }
 
-function transition(g) {
-  return g.transition().duration(500);
-}
+  function transition(g) {
+    return g.transition().duration(500);
+  }
 
-// Returns the path for a given data point.
-function path(d) {
-  return line(dimensions.map(function(p) { return [position(p), y1[p](d[p])]; }));
-}
+  // Returns the path for a given data point.
+  function path(d) {
+    return line(dimensions.map(function (p) { return [position(p), y1[p](d[p])]; }));
+  }
 
-function brushstart(event) {
-  event.sourceEvent.stopPropagation();
-}
-// Handles a brush event, toggling the display of foreground lines.
-function brush_parallel_chart(event,i) {  
- 
-  console.log(dimNames[i]);
-  if(event.selection != null){  
-    svgParallel.selectAll(".backpath").style("stroke","#FFb3a2")
-    svgParallel.selectAll(".forepath").style("stroke","#69b3a2")
-    
-    for(var j=0;j<dimensions.length;++j){
-        if(event.target==y1[dimensions[j]].brush) {
-            extents[j]=event.selection.map(y1[dimensions[j]].invert,y1[dimensions[j]]);
+  function brushstart(event) {
+    event.sourceEvent.stopPropagation();
+  }
+  // Handles a brush event, toggling the display of foreground lines.
+  function brush_parallel_chart(event, i) {
+    // svgParallel.selectAll(".forepath").style("display",true)
+    if (event.selection != null) {
+      svgParallel.selectAll(".backpath").style("stroke", "#FFb3a2");
+      svgParallel.selectAll(".forepath").style("stroke", "#69b3a2");
+
+
+      for (var j = 0; j < dimensions.length; ++j) {
+        if (event.target == y1[dimensions[j]].brush) {
+          extents[j] = event.selection.map(y1[dimensions[j]].invert, y1[dimensions[j]]);
         }
-    }
-      foreground.style("display", function(d) {
-        return dimensions.every(function(p, i) {
+      }
+      foreground.style("display", function (d) {
+        return dimensions.every(function (p, i) {
 
-            if(extents[i][0]==0) {
-                return true;
-            }
+          if (extents[i][0] == 0) {
+            return true;
+          }
           return extents[i][1] <= d[p] && d[p] <= extents[i][0];
         }) ? null : "none";
-        
+
       });
 
       var dneme;
-      svgScatterPlot.selectAll("circle").attr("r",function(d){
-        dimensions.every(function(element, index) {
-        if (extents[index][1] <= d[element] && d[element] <= extents[index][0] || extents[index][0]==0) {
-         
-          dneme = true;
-          return true
-        }
-        else
-        {
-          dneme=false;
-          return false
-        }}
-       
-    )
-    if(dneme){
-      return "3"
-    }
-    else{
-      return "1"
-    }
-  })
-  var bok;
-  svgScatterPlot.selectAll("circle").style("opacity",function(d){
-      dimensions.every(function(p, i) {
-        if (extents[i][1] <= d[p] && d[p] <= extents[i][0] || extents[i][0]==0) {
-         bok = true;
-          return true
-        }
-        else
-        { 
-          bok=false;
-          return false
-        }
-    }
-    )
-  if(bok){
-      return "1"
-    }
-    else{
-      return "0.3"
-    }})
-    
-}
-else {
+      svgScatterPlot.selectAll("circle").attr("r", function (d) {
+        dimensions.every(function (element, index) {
+          if (extents[index][1] <= d[element] && d[element] <= extents[index][0] || extents[index][0] == 0) {
 
-  extents[dimNames[i]]=[0,0];
-  var truth_val = extents.every(element => element.every(e => e == 0));
-  if(truth_val){
-      svgParallel.selectAll(".backpath").style("stroke","steelblue");
-      svgParallel.selectAll(".forepath").style("stroke","steelblue");
-      svgScatterPlot.selectAll("circle").style("opacity",0.3);
-      svgScatterPlot.selectAll("circle").attr("r",2);
+            dneme = true;
+            return true
+          }
+          else {
+            dneme = false;
+            return false
+          }
+        }
+
+        )
+        if (dneme) {
+          return "3"
+        }
+        else {
+          return "1"
+        }
+      })
+      var bok;
+      svgScatterPlot.selectAll("circle").style("opacity", function (d) {
+        dimensions.every(function (p, i) {
+          if (extents[i][1] <= d[p] && d[p] <= extents[i][0] || extents[i][0] == 0) {
+            bok = true;
+            return true
+          }
+          else {
+            bok = false;
+            return false
+          }
+        }
+        )
+        if (bok) {
+          return "1"
+        }
+        else {
+          return "0.3"
+        }
+      })
 
     }
-    else{
-      foreground.style("display", function(d) {
-        return dimensions.every(function(p, i) {
+    else {
 
-            if(extents[i][0]==0) {
-                return true;
+      extents[dimNames[i]] = [0, 0];
+      var truth_val = extents.every(element => element.every(e => e == 0));
+      if (truth_val) {
+        svgParallel.selectAll(".backpath").style("stroke", "steelblue");
+        svgParallel.selectAll(".forepath").style("stroke", "steelblue");
+        svgScatterPlot.selectAll("circle").style("opacity", 0.3);
+        svgScatterPlot.selectAll("circle").attr("r", 2);
+
+      }
+      else {
+
+        foreground.style("display", function (d) {
+          return dimensions.every(function (p, i) {
+
+            if (extents[i][0] == 0) {
+              return true;
             }
-          return extents[i][1] <= d[p] && d[p] <= extents[i][0];
-        }) ? null : "none";
-        
-      });
+            return extents[i][1] <= d[p] && d[p] <= extents[i][0];
+          }) ? null : "none";
 
-      var dneme;
-      svgScatterPlot.selectAll("circle").attr("r",function(d){
-        dimensions.every(function(element, index) {
-        if (extents[index][1] <= d[element] && d[element] <= extents[index][0] || extents[index][0]==0) {
-         
-          dneme = true;
-          return true
-        }
-        else
-        {
-          dneme=false;
-          return false
-        }}
-       
-    )
-    if(dneme){
-      return "3"
+        });
+
+        var dneme;
+        svgScatterPlot.selectAll("circle").attr("r", function (d) {
+          dimensions.every(function (element, index) {
+            if (extents[index][1] <= d[element] && d[element] <= extents[index][0] || extents[index][0] == 0) {
+
+              dneme = true;
+              return true
+            }
+            else {
+              dneme = false;
+              return false
+            }
+          }
+
+          )
+          if (dneme) {
+            return "3"
+          }
+          else {
+            return "1"
+          }
+        })
+        var bok;
+        svgScatterPlot.selectAll("circle").style("opacity", function (d) {
+          dimensions.every(function (p, i) {
+            if (extents[i][1] <= d[p] && d[p] <= extents[i][0] || extents[i][0] == 0) {
+              bok = true;
+              return true
+            }
+            else {
+              bok = false;
+              return false
+            }
+          }
+          )
+          if (bok) {
+            return "1"
+          }
+          else {
+            return "0.3"
+          }
+        })
+
+
+
+      }
+      // console.log(extents);
+      // console.log(extents.every(element => element.every(e => e == 0)));
+      // svgScatterPlot.selectAll("circle").style("opacity",0.3);
+      // svgScatterPlot.selectAll("circle").attr("r",2);
+      // // svgParallel.selectAll(".forepath").style("display",false);
+
+      // svgParallel.selectAll(".backpath").style("stroke","steelblue")
+      // svgParallel.selectAll(".forepath").style("stroke","steelblue")
+
     }
-    else{
-      return "1"
-    }
-  })
-  var bok;
-  svgScatterPlot.selectAll("circle").style("opacity",function(d){
-      dimensions.every(function(p, i) {
-        if (extents[i][1] <= d[p] && d[p] <= extents[i][0] || extents[i][0]==0) {
-         bok = true;
-          return true
-        }
-        else
-        { 
-          bok=false;
-          return false
-        }
-    }
-    )
-  if(bok){
-      return "1"
-    }
-    else{
-      return "0.3"
-    }})
-    
-
-    }
-  // console.log(extents);
-  // console.log(extents.every(element => element.every(e => e == 0)));
-  // svgScatterPlot.selectAll("circle").style("opacity",0.3);
-  // svgScatterPlot.selectAll("circle").attr("r",2);
-  // // svgParallel.selectAll(".forepath").style("display",false);
-
-  // svgParallel.selectAll(".backpath").style("stroke","steelblue")
-  // svgParallel.selectAll(".forepath").style("stroke","steelblue")
-
-}
-}
+  }
 
 
 
-//trial ends
+  //trial ends
 
 
 
@@ -424,207 +430,274 @@ else {
 
 
 
-    //   // The path function take a row of the csv as input, and return x and y coordinates of the line to draw for this raw.
-    // function path(d) {
-    //     return d3.line()(dimensions.map(function(p) { 
-    //         return [x1(p), y1[p](d[p])]; }));
-    // }
-    //   // Draw the lines
-    // svgParallel
-    // .selectAll("myPath")
-    // .data(data)
-    // .join("path")
-    // .attr("d",  path)
-    // .style("fill", "none")
-    // .style("stroke", "#69b3a2")
-    // .style("opacity", 0.3)
+  //   // The path function take a row of the csv as input, and return x and y coordinates of the line to draw for this raw.
+  // function path(d) {
+  //     return d3.line()(dimensions.map(function(p) { 
+  //         return [x1(p), y1[p](d[p])]; }));
+  // }
+  //   // Draw the lines
+  // svgParallel
+  // .selectAll("myPath")
+  // .data(data)
+  // .join("path")
+  // .attr("d",  path)
+  // .style("fill", "none")
+  // .style("stroke", "#69b3a2")
+  // .style("opacity", 0.3)
 
-    // // Draw the axis:
-    // svgParallel.selectAll("myAxis")
-    // // For each dimension of the dataset I add a 'g' element:
-    // .data(dimensions).enter()
-    // .append("g")
-    // // I translate this element to its right position on the x axis
-    // .attr("transform", function(d) { return "translate(" + x1(d) + ")"; })
-    // // And I build the axis with the call function
-    // .each(function(d) { d3.select(this).call(d3.axisLeft().scale(y1[d])); })
-    // // Add axis title
-    // .append("text")
-    //     .style("text-anchor", "middle")
-    //     .attr("y", -9)
-    //     .text(function(d) { return d; })
-    //     .style("fill", "black")
+  // // Draw the axis:
+  // svgParallel.selectAll("myAxis")
+  // // For each dimension of the dataset I add a 'g' element:
+  // .data(dimensions).enter()
+  // .append("g")
+  // // I translate this element to its right position on the x axis
+  // .attr("transform", function(d) { return "translate(" + x1(d) + ")"; })
+  // // And I build the axis with the call function
+  // .each(function(d) { d3.select(this).call(d3.axisLeft().scale(y1[d])); })
+  // // Add axis title
+  // .append("text")
+  //     .style("text-anchor", "middle")
+  //     .attr("y", -9)
+  //     .text(function(d) { return d; })
+  //     .style("fill", "black")
 
-//usttekini trial ende kadar uncomment
+  //usttekini trial ende kadar uncomment
 
-//---------------------------Treemap
+  //---------------------------Treemap
 
-// var margin_tree = {top: 10, right: 10, bottom: 10, left: 10},
-//   width_tree = 445 - margin_tree.left - margin_tree.right,
-//   tree_height = 445 - margin_tree.top - margin_tree.bottom;
+  // var margin_tree = {top: 10, right: 10, bottom: 10, left: 10},
+  //   width_tree = 445 - margin_tree.left - margin_tree.right,
+  //   tree_height = 445 - margin_tree.top - margin_tree.bottom;
 
-// // append the svg object to the body of the page
-// var svg = d3.select("#treemap")
-// .append("svg")
-//   .attr("width", width_tree + margin_tree.left + margin_tree.right)
-//   .attr("height", tree_height + margin_tree.top + margin_tree.bottom)
-// .append("g")
-//   .attr("transform",
-//         "translate(" + margin_tree.left + "," + margin_tree.top + ")");
-        
-//         let groups = d3.rollup(data,
-//             function(d) { return d.length; },
-//             function(d) { return d.Genre; },
-//             function(d) { return d.Platform; },
-//             function(d) { return d.Publisher; }
-//            );
-//     console.log(groups);
-//     let root = d3.hierarchy(groups);
-//     // console.log(root[0])
-//     root.sum(function(d) {
-//         // console.log(d[1]);
-//         return d[1];
-//       });
+  // // append the svg object to the body of the page
+  // var svg = d3.select("#treemap")
+  // .append("svg")
+  //   .attr("width", width_tree + margin_tree.left + margin_tree.right)
+  //   .attr("height", tree_height + margin_tree.top + margin_tree.bottom)
+  // .append("g")
+  //   .attr("transform",
+  //         "translate(" + margin_tree.left + "," + margin_tree.top + ")");
 
-//         d3.treemap()
-//         .size([width_tree, height_parallel])
-//         .padding(0.1)
-//         (root);
-    
-//       // use this information to add rectangles:
-//       svg
-//         .selectAll("rect")
-//         .data(root.leaves())
-//         .enter()
-//         .append("rect")
-//           .attr('x', function (d) { return d.x0; })
-//           .attr('y', function (d) { return d.y0; })
-//           .attr('width', function (d) { return d.x1 - d.x0; })
-//           .attr('height', function (d) { return d.y1 - d.y0; })
-//           .style("stroke", "black")
-//           .style("fill", "#69b3a2");
-    
-//       // and to add the text labels
-//       svg
-//         .selectAll("text")
-//         .data(root.leaves())
-//         .enter()
-//         .append("text")
-//           .attr("x", function(d){ return d.x0+10})    // +10 to adjust position (more right)
-//           .attr("y", function(d){ return d.y0+20})    // +20 to adjust position (lower)
-//           .text(function(d){ return d.data.name})
-//           .attr("font-size", "15px")
-//           .attr("fill", "white");
+  //         let groups = d3.rollup(data,
+  //             function(d) { return d.length; },
+  //             function(d) { return d.Genre; },
+  //             function(d) { return d.Platform; },
+  //             function(d) { return d.Publisher; }
+  //            );
+  //     console.log(groups);
+  //     let root = d3.hierarchy(groups);
+  //     // console.log(root[0])
+  //     root.sum(function(d) {
+  //         // console.log(d[1]);
+  //         return d[1];
+  //       });
 
-//----Barplots
+  //         d3.treemap()
+  //         .size([width_tree, height_parallel])
+  //         .padding(0.1)
+  //         (root);
 
-const margin_bar = {top: 0, right: 0, bottom: 30, left: 50},
-    width_bar = innerWidth*0.5 - margin_bar.left - margin_bar.right,
-    height_bar = innerHeight *0.4 - margin_bar.top - margin_bar.bottom;
+  //       // use this information to add rectangles:
+  //       svg
+  //         .selectAll("rect")
+  //         .data(root.leaves())
+  //         .enter()
+  //         .append("rect")
+  //           .attr('x', function (d) { return d.x0; })
+  //           .attr('y', function (d) { return d.y0; })
+  //           .attr('width', function (d) { return d.x1 - d.x0; })
+  //           .attr('height', function (d) { return d.y1 - d.y0; })
+  //           .style("stroke", "black")
+  //           .style("fill", "#69b3a2");
 
-// append the svg object to the body of the page
-const svg = d3.select("#barPlot")
-  .append("svg")
+  //       // and to add the text labels
+  //       svg
+  //         .selectAll("text")
+  //         .data(root.leaves())
+  //         .enter()
+  //         .append("text")
+  //           .attr("x", function(d){ return d.x0+10})    // +10 to adjust position (more right)
+  //           .attr("y", function(d){ return d.y0+20})    // +20 to adjust position (lower)
+  //           .text(function(d){ return d.data.name})
+  //           .attr("font-size", "15px")
+  //           .attr("fill", "white");
+
+  //----Barplots
+
+  const margin_bar = { top: 10, right: 0, bottom: 30, left: 50 },
+    width_bar = innerWidth * 0.5 - margin_bar.left - margin_bar.right,
+    height_bar = innerHeight * 0.4 - margin_bar.top - margin_bar.bottom;
+
+  // append the svg object to the body of the page
+  const svgBarplot = d3.select("#barPlot")
+    .append("svg")
     .attr("width", width_bar + margin_bar.left + margin_bar.right)
     .attr("height", height_bar + margin_bar.top + margin_bar.bottom)
-  .append("g")
+    .append("g")
     .attr("transform", `translate(${margin_bar.left},${margin_bar.top})`);
 
-    
-// Parse the Data
+
+  // Parse the Data
 
   // List of subgroups = header of the csv files = soil condition here
-  const subgroups = data.columns.slice(9,13);
 
-     d3.select("#checkbox").selectAll("input")
-                    .data(subgroups)
-                    .enter().append("label")
-                    .text(function(d) { return d; })
-                    
-                    .append("input")
-                    .attr("checked", true)
-                    .attr("type", "checkbox")
-                    .attr("transform", function(d, i) { return "translate(0," + i * 10 + ")"})
-                    .attr("id", function(d,i) { return i; })
-                    // .attr("onClick", "change(this)")
-                    .attr("for", function(d,i) { return i; })
-                    
+  var rollupDatas = [];
+  const subgroups = data.columns.slice(9, 13);
+
+  d3.select("#checkbox").selectAll("input")
+    .data(subgroups)
+    .enter().append("label")
+    .text(function (d) { return d; })
+    .append("input")
+    .attr("checked", true)
+    .attr("type", "checkbox")
+    .attr("transform", function (d, i) { return "translate(0," + i * 10 + ")" })
+    .attr("id", function (d, i) { return i; })
+    .on("click", function (d) {
+      var checked = this.checked;
+      console.log(d.target.id);
+      if (d.target.id == 0) {
+        NA_checked = this.checked;
+      }
+      else if (d.target.id == 1) {
+        EU_checked = this.checked;
+      }
+      else if (d.target.id == 2) {
+        JP_checked = this.checked;
+      }
+      else if (d.target.id == 3) {
+        Other_checked = this.checked;
+      }
+      output_Sales = d3.rollups(
+        data,
+        xs => rollupFnc(xs),
+        d => d.Genre
+      )
+        .map(([k, v]) => ({ Genre: k, Sales: v }));
+
+      barData = [];
+      for (let i = 0; i < output_Sales.length; i++) {
+        var deneme = {};
+        deneme.Genre = output_Sales[i].Genre;
+        deneme.JP_Sales = output_Sales[i].Sales[0].JP;
+        deneme.EU_Sales = output_Sales[i].Sales[0].EU;
+        deneme.NA_Sales = output_Sales[i].Sales[0].NA;
+        deneme.Other_Sales = output_Sales[i].Sales[0].Other;
+        barData.push(deneme);
+      }
+      console.log(barData)
+      //stack the data? --> stack per subgroup
+      stackedData = d3.stack()
+        .keys(subgroups)
+        (barData);
+
+      barGroup = svgBarplot.append("g").selectAll("g");
+        // Enter in the stack data = loop key per key = group per group
+        bars = barGroup.data(stackedData)
+        .join("g")
+        .attr("fill", d => color(d.key))
+        .selectAll("rect")
+        // enter a second time = loop subgroup per subgroup to add all rectangles
+        .data(d => d);
+
+        bars.join("rect")
+        .attr("x", d => x_bar(d.data.Genre))
+        .attr("y", d => y_bar(d[1]))
+        .attr("height", d => y_bar(d[0]) - y_bar(d[1]))
+        .attr("width", x_bar.bandwidth());
+        bars.exit().remove();
+        barGroup.exit()
+        .remove();
+
+        
+    })
+  // .attr("onClick", "change(this)")
+  // .attr("for", function(d,i) { return i; })
+
+
   // List of groups = species here = value of the first column called group -> I show them on the X axis
   const groups = data.map(d => (d.Genre));
 
   // Add X axis
   const x_bar = d3.scaleBand()
-      .domain(groups)
-      .range([0, width_bar])
-      .padding([0.2])
-  svg.append("g")
+    .domain(groups)
+    .range([0, width_bar])
+    .padding([0.2])
+  svgBarplot.append("g")
     .attr("transform", `translate(0, ${height_bar})`)
     .call(d3.axisBottom(x_bar).tickSizeOuter(0));
 
   // Add Y axis
   const y_bar = d3.scaleLinear()
-    .domain([0, 1750])
-    .range([height_bar, 0 ]);
-  svg.append("g")
+    .domain([0, 1000])
+    .range([height_bar, 0]);
+  svgBarplot.append("g")
     .call(d3.axisLeft(y_bar));
 
-var output_Sales = d3.rollups(
-              data,
-              xs => [d3.sum(xs, x => x.JP_Sales),d3.sum(xs, x => x.EU_Sales),d3.sum(xs, x => x.NA_Sales),d3.sum(xs, x => x.Other_Sales)],
-              d => d.Genre
-            )
-            .map(([k, v]) => ({ Genre: k, Sales: v }));
+  function rollupFnc(xs) {
+    datas =
+    {
+      "JP": 0.0,
+      "EU": 0.0,
+      "NA": 0.0,
+      "Other": 0.0
+    }
 
-var barData = [];
-for (let i = 0; i < output_Sales.length; i++) {
-     var deneme = {};
-     deneme.Genre = output_Sales[i].Genre;
-     deneme.JP_Sales = output_Sales[i].Sales[0];
-     deneme.EU_Sales = output_Sales[i].Sales[1];
-     deneme.NA_Sales = output_Sales[i].Sales[2];
-     deneme.Other_Sales = output_Sales[i].Sales[3];
-     barData.push(deneme);
- }            
-                           
+    if (JP_checked) {
+      datas.JP = d3.sum(xs, x => x.JP_Sales);
+    }
+    if (EU_checked) {
+      datas.EU = d3.sum(xs, x => x.EU_Sales);
+    }
+    if (NA_checked) {
+      datas.NA = d3.sum(xs, x => x.NA_Sales);
+    }
+    if (Other_checked) {
+      datas.Other = d3.sum(xs, x => x.Other_Sales);
+    }
+    return [datas];
+  }
+  output_Sales = d3.rollups(
+    data,
+    xs => rollupFnc(xs),
+    d => d.Genre
+  )
+    .map(([k, v]) => ({ Genre: k, Sales: v }));
+
+  // console.log(output_Sales);
+  var barData = [];
+  for (let i = 0; i < output_Sales.length; i++) {
+    var deneme = {};
+    deneme.Genre = output_Sales[i].Genre;
+    deneme.JP_Sales = output_Sales[i].Sales[0].JP;
+    deneme.EU_Sales = output_Sales[i].Sales[0].EU;
+    deneme.NA_Sales = output_Sales[i].Sales[0].NA;
+    deneme.Other_Sales = output_Sales[i].Sales[0].Other;
+    barData.push(deneme);
+  }
+  console.log(barData);
+  //stack the data? --> stack per subgroup
+  stackedData = d3.stack()
+    .keys(subgroups)
+    (barData)
   // color palette = one color per subgroup
   color = d3.scaleOrdinal()
     .domain(subgroups)
-    .range(['#e41a1c','#1f77b4','#ff7f0e','#2ca02c'])
-
-  //stack the data? --> stack per subgroup
-  const stackedData = d3.stack()
-    .keys(subgroups)
-    (barData)
+    .range(['#e41a1c', '#1f77b4', '#ff7f0e', '#2ca02c'])
 
   // Show the bars
-  svg.append("g")
+  svgBarplot.append("g")
     .selectAll("g")
     // Enter in the stack data = loop key per key = group per group
     .data(stackedData)
     .join("g")
-      .attr("fill", d => color(d.key))
-      .selectAll("rect")
-      // enter a second time = loop subgroup per subgroup to add all rectangles
-      .data(d=>d)
-      .join("rect")
-        .attr("x", d => x_bar(d.data.Genre))
-        .attr("y", d => y_bar(d[1]))
-        .attr("height", d => y_bar(d[0]) - y_bar(d[1]))
-        .attr("width",x_bar.bandwidth())
-
-
-
-
-
-    //checkbox
-    // d3.select("#barPlot").append('input').attr('type','checkbox')
-    // .data(subgroups)
-    // .enter().append("label")
-    // .attr("checked", true)
-    // .attr("id", function(d,i) { return i; })
-    // .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
-
-
- 
-    
+    .attr("fill", d => color(d.key))
+    .selectAll("rect")
+    // enter a second time = loop subgroup per subgroup to add all rectangles
+    .data(d => d)
+    .join("rect")
+    .attr("x", d => x_bar(d.data.Genre))
+    .attr("y", d => y_bar(d[1]))
+    .attr("height", d => y_bar(d[0]) - y_bar(d[1]))
+    .attr("width", x_bar.bandwidth())
 });
