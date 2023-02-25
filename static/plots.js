@@ -84,7 +84,7 @@ d3.csv("/home").then(function (data) {
     .style("fill", function (d) { return color_mean(d.color) })
 
   var brushTot = d3.brush()
-    .extent([[0, 0], [width_scatter, height_scatter]]).on("brush start",brushstart)
+    .extent([[0, 0], [width_scatter, height_scatter]])
     .on("end", selected);
 
   svgScatterPlot.append("g")
@@ -93,8 +93,9 @@ d3.csv("/home").then(function (data) {
 
   function selected(event) {
     var selection = event.selection;
-    console.log(selection)
-    svgParallel.selectAll("path").style("stroke","steelblue").lower()
+
+    // svgParallel.selectAll("path").style("stroke","steelblue").lower()
+
     if (selection != null) {
       svgScatterPlot.selectAll("circle").attr("r", function (d) {
         if ((x_scatter(d.X1) > selection[0][0]) && (x_scatter(d.X1) < selection[1][0]) && (y_scatter(d.X2) > selection[0][1]) && (y_scatter(d.X2) < selection[1][1])) {
@@ -114,23 +115,28 @@ d3.csv("/home").then(function (data) {
       })
       svgParallel.selectAll("path")
         .style("stroke", function (d) {
+          if(d!=null){
           if ((x_scatter(d.X1) > selection[0][0]) && (x_scatter(d.X1) < selection[1][0]) && (y_scatter(d.X2) > selection[0][1]) && (y_scatter(d.X2) < selection[1][1])) {
             dataSelection.push(d.id)
             d3.select(this).raise()
+            d3.select(this).style("opacity", 1);
             return "red"
           }
           else {
-            d3.select(this).lower()
-            return "steelblue"
+            // d3.select(this).lower()
+            return "#69b3a2"
           }
-        })
+        }})
     }
     else {
-      console.log("spoo nqui")
       svgScatterPlot.selectAll("circle").style("opacity", 0.3);
       svgScatterPlot.selectAll("circle").attr("r", 2);
       // svgParallel.selectAll(".forepath").style("display",false);
-      svgParallel.selectAll("path").style("stroke", "steelblue")
+      svgParallel.selectAll(".forepath").style("stroke", "#69b3a2").style("opacity",0.5);
+      svgParallel.selectAll(".backpath").style("stroke", "#69b3a2").style("opacity",0.5);
+      
+      svgParallel.selectAll("path").lower();
+      // d3.select(this).style("opacity", 1);
     }
   }
   //---------------------------------------
@@ -161,16 +167,12 @@ d3.csv("/home").then(function (data) {
       y1[names] = d3.scalePoint().domain(domains_sorted).range([height_parallel, 0]);
     }
   }
-  extents = {}
-  for (p in dimensions){
-    extents[dimensions[p]]=[0, 0]
-  }
-  //dimensions.map(function (p) { return [0, 0]; });
+  extents = dimensions.map(function (p) { return [0, 0]; });
   // Build the X scale -> it find the best position for each Y axis
   x1 = d3.scalePoint().range([0, width_parallel])
     .padding(0.1)
     .domain(dimensions);
-  //trial stars
+
 
   var background = svgParallel.append("g")
     .attr("class", "background")
@@ -179,7 +181,7 @@ d3.csv("/home").then(function (data) {
     .enter().append("path")
     .attr("class", "backpath")
     .attr("d", path).style("fill", "none")
-    .style("stroke", "#FFb3a2");
+    .style("stroke", "#C0C0C0n").style("opacity", 0.5);
 
   // Add blue foreground lines for focus.
   var foreground = svgParallel.append("g")
@@ -189,7 +191,7 @@ d3.csv("/home").then(function (data) {
     .enter().append("path")
     .attr("class", "forepath")
     .attr("d", path).style("fill", "none")
-    .style("stroke", "#69b3a2");
+    .style("stroke", "#69b3a2").style("opacity", 0.5);
 
   // Add a group element for each dimension.
   var g_before3 = svgParallel.selectAll(".dimension1")
@@ -209,30 +211,30 @@ d3.csv("/home").then(function (data) {
   g_after3.append("g")
     .attr("class", "axis")
     .each(function (d) { d3.select(this).call(d3.axisLeft(y1[d])); })
-    //text does not show up because previous line breaks somehow
     .append("text")
     .style("text-anchor", "middle")
-    .attr("y", -9)
-    .text(function (d) { return d; });
+    .attr("y", -10)
+    .text(function (d) { console.log(d);return d; }).style("fill", "black")
+    //.style("text-shadow", "0 5px 0 #fff, 1px 0 0 #000, 0 -1px 0 #fff, -1px 0 0 #fff");
 
   g_before3.append("g")
     .attr("class", "axis")
     .each(function (d) { d3.select(this).call(d3.axisLeft(y1[d])); })
-    //text does not show up because previous line breaks somehow
     .append("text")
     .style("text-anchor", "middle")
     .attr("y", -9)
-    .text(function (d) { return d; });
+    .text(function (d) { return d; }).style("fill", "black")
 
   // Add and store a brush for each axis.
   g_after3.append("g")
     .attr("class", "brush")
     .each(function (d) {
-      d3.select(this).call(y1[d].brush = d3.brushY().extent([[0, 0], [8, height_parallel]]).on("end", brush_parallel_chart));
+      d3.select(this)
+      .call(y1[d].brush = d3.brushY().extent([[-5, 0], [8, height_parallel]])
+      .on("brush end", brush_parallel_chart));
     })
-    .selectAll("rect")
-    .attr("x", -8)
-    .attr("width", 16);
+    .selectAll("rect");
+
 
   function position(d) {
     var v = dragging[d];
@@ -247,27 +249,139 @@ d3.csv("/home").then(function (data) {
   function path(d) {
     return line(dimensions.map(function (p) { return [position(p), y1[p](d[p])]; }));
   }
-
-  function brushstart(event) {
-    event.sourceEvent.stopPropagation();
-  }
-  const selections = new Map();
+ 
   // Handles a brush event, toggling the display of foreground lines.
   function brush_parallel_chart(event, i) {
-    //console.log(extents,selection.selection,i)
-    extents[i]=event.selection
-    //console.log(svgParallel.select("path"))
-    console.log(extents)
-    console.log(dimensions)
-    svgParallel.selectAll("path").each(d =>{
-     
-      front = true
-      for(j in dimensions){
-        //extents[ dimensions[j]][1] = y1[ dimensions[j]]( extents[ dimensions[j]][1] ) 
-        if(extents[ dimensions[j]][0]==0) {continue}
-        //extents[dimensions[j]][1] <= d[p] && d[p] <= extents[dimensions[j]][0];
+    // svgParallel.selectAll(".forepath").style("display",true)
+    if (event.selection != null) {
+      svgParallel.selectAll(".backpath").style("stroke", "#C0C0C0");
+      svgParallel.selectAll(".forepath").style("stroke", "#ff3349").style("opacity",1);
+
+      for (var j = 0; j < dimensions.length; ++j) {
+        if (event.target == y1[dimensions[j]].brush) {
+          extents[j] = event.selection.map(y1[dimensions[j]].invert, y1[dimensions[j]]);
+        }
       }
-    })
+      
+      foreground.style("display", function (d) {
+        return dimensions.every(function (p, i) {
+          if (extents[i][0] == 0) {
+            return true;
+          }
+          return extents[i][1] <= d[p] && d[p] <= extents[i][0];
+        }) ? null : "none";
+      }
+      );
+
+      var dneme;
+      svgScatterPlot.selectAll("circle").attr("r", function (d) {
+        dimensions.every(function (element, index) {
+          if (extents[index][1] <= d[element] && d[element] <= extents[index][0] || extents[index][0] == 0) {
+
+            dneme = true;
+            return true
+          }
+          else {
+            dneme = false;
+            return false
+          }
+        }
+
+        )
+        if (dneme) {
+          return "3"
+        }
+        else {
+          return "1"
+        }
+      })
+      var bok;
+      svgScatterPlot.selectAll("circle").style("opacity", function (d) {
+        dimensions.every(function (p, i) {
+          if (extents[i][1] <= d[p] && d[p] <= extents[i][0] || extents[i][0] == 0) {
+            bok = true;
+            return true
+          }
+          else {
+            bok = false;
+            return false
+          }
+        }
+        )
+        if (bok) {
+          return "1"
+        }
+        else {
+          return "0.3"
+        }
+      })
+
+    }
+    else {
+      svgParallel.selectAll(".forepath").style("display","none");
+
+      extents[dimNames[i]] = [0, 0];
+      var truth_val = extents.every(element => element.every(e => e == 0));
+      if (truth_val) {
+
+        svgParallel.selectAll(".backpath").style("stroke", "#69b3a2");
+        svgParallel.selectAll(".forepath").style("stroke", "#69b3a2");
+        svgScatterPlot.selectAll("circle").style("opacity", 0.3);
+        svgScatterPlot.selectAll("circle").attr("r", 2);
+
+      }
+      else {
+
+        var dneme;
+        svgScatterPlot.selectAll("circle").attr("r", function (d) {
+          dimensions.every(function (element, index) {
+            if (extents[index][1] <= d[element] && d[element] <= extents[index][0] || extents[index][0] == 0) {
+              dneme = true;
+              return true
+            }
+            else {
+              dneme = false;
+              return false
+            }}
+          )
+          if (dneme) {
+            return "3"
+          }
+          else {
+            return "1"
+          }
+        })
+        var bok;
+        svgScatterPlot.selectAll("circle").style("opacity", function (d) {
+          dimensions.every(function (p, i) {
+            if (extents[i][1] <= d[p] && d[p] <= extents[i][0] || extents[i][0] == 0) {
+              bok = true;
+              return true
+            }
+            else {
+              bok = false;
+              return false
+            }
+          }
+          )
+          if (bok) {
+            return "1"
+          }
+          else {
+            return "0.3"
+          }
+        })
+      }
+      // console.log(extents);
+      // console.log(extents.every(element => element.every(e => e == 0)));
+      // svgScatterPlot.selectAll("circle").style("opacity",0.3);
+      // svgScatterPlot.selectAll("circle").attr("r",2);
+      // // svgParallel.selectAll(".forepath").style("display",false);
+
+      // svgParallel.selectAll(".backpath").style("stroke","steelblue")
+      // svgParallel.selectAll(".forepath").style("stroke","steelblue")
+
+    }
   }
 
 
@@ -406,7 +520,7 @@ d3.csv("/home").then(function (data) {
     .text(function (d) { return d; })
     .style("color","white")
     .style("background-color", function (d) {  
-      console.log(color(d));
+    
       return color(d)})
     .append("input")
     .attr("checked", true)
@@ -414,8 +528,6 @@ d3.csv("/home").then(function (data) {
     .attr("transform", function (d, i) { return "translate(0," + i * 10 + ")" })
     .attr("id", function (d, i) { return i; })
     .on("click", function (d) {
-      var checked = this.checked;
-      console.log(d.target.id);
       if (d.target.id == 0) {
         NA_checked = this.checked;
       }
@@ -444,7 +556,6 @@ d3.csv("/home").then(function (data) {
         deneme.Other_Sales = output_Sales[i].Sales[0].Other;
         barData.push(deneme);
       }
-      console.log(barData)
       //stack the data? --> stack per subgroup
 
       stackedData = d3.stack()
@@ -532,7 +643,6 @@ d3.csv("/home").then(function (data) {
     deneme.Other_Sales = output_Sales[i].Sales[0].Other;
     barData.push(deneme);
   }
-  console.log(barData);
   //stack the data? --> stack per subgroup
   stackedData = d3.stack()
     .keys(subgroups)
