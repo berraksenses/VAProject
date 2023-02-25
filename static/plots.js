@@ -43,6 +43,33 @@ const svgParallel = d3.select("#parallelCoordinates")
 
 const dimNames = { "NA_Sales": 3, "EU_Sales": 4, "JP_Sales": 5, "Other_Sales": 6, "Global_Sales": 7 };
 
+
+const mouseover = (event, d) => {
+  Tooltip.transition()
+  .duration('10').style("opacity", 1);
+  var text = "";
+  const keys = Object.keys(d.data);
+  console.log(keys);
+  keys.forEach((key, index) => {
+    if(d.data.key != 0 && index!=0){
+      text = text + key + ": " + String(d.data[key]).substring(0,6)+" Million<br>";
+    }
+   
+  }); 
+  console.log(text);
+  Tooltip
+    .html(text)
+    .style("left", (event.layerX-180) + "px")
+    .style("top", (event.layerY-120) + "px");
+}
+
+const mouseout = (event, d) => {
+  Tooltip.transition()
+         .duration('10')
+         .style("opacity", 0);;
+}
+
+
 d3.csv("/home").then(function (data) {
   //scatter plot
   const x_scatter = d3.scaleSqrt()
@@ -383,28 +410,8 @@ d3.csv("/home").then(function (data) {
           }
         })
       }
-      // console.log(extents);
-      // console.log(extents.every(element => element.every(e => e == 0)));
-      // svgScatterPlot.selectAll("circle").style("opacity",0.3);
-      // svgScatterPlot.selectAll("circle").attr("r",2);
-      // // svgParallel.selectAll(".forepath").style("display",false);
-
-      // svgParallel.selectAll(".backpath").style("stroke","steelblue")
-      // svgParallel.selectAll(".forepath").style("stroke","steelblue")
-
     }
   }
-
-
-
-  //trial ends
-
-
-
-
-
-
-
 
   //   // The path function take a row of the csv as input, and return x and y coordinates of the line to draw for this raw.
   // function path(d) {
@@ -674,41 +681,5 @@ d3.csv("/home").then(function (data) {
     .attr("x", d => x_bar(d.data.Genre))
     .attr("y", d => y_bar(d[1]))
     .attr("height", d => y_bar(d[0]) - y_bar(d[1]))
-    .attr("width", x_bar.bandwidth()).on('mouseover', function (event,d) {
-      Tooltip.transition()
-      .duration('10').style("opacity", 1);
-      Tooltip
-        .html("North America Sales " + d.data.NA_Sales)
-        .style("left", (event.layerX-150) + "px")
-        .style("top", (event.layerY-100) + "px");
-          // d3.select(this).style("stroke", "black")
-          // .style("opacity", 1);
-   })
-  //  .on("mousemove", function (event,d) {
-  //    console.log(event);
-  //     Tooltip.transition()
-  //     .duration('10')
-  //         .style("opacity", 1);
-        
-       
-  //       // d3.select(this).transition()
-  //       // .attr('opacity', '1'); 
-  //  })
-
-   .on('mouseout', function (event,d) {
-    //Makes the new div disappear:
-    Tooltip.transition()
-         .duration('10')
-         .style("opacity", 0);});
-
-    // svgBarplot.append("text")
-    // .attr("class", "y label")
-    // .attr("text-anchor", "end")
-    // .attr("y", 6)
-    // .attr("x","19")
-    // .attr("dy", ".95em")
-    // .attr("transform", "rotate(-90)")
-    // .text("life expectancy (years)");
-
-    
+    .attr("width", x_bar.bandwidth()).on('mouseover',mouseover).on('mouseout',mouseout) 
 });
