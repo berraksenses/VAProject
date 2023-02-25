@@ -8,6 +8,17 @@ var NA_checked = true;
 var EU_checked = true;
 var JP_checked = true;
 var Other_checked = true;
+
+var Tooltip = d3.select("#barPlot")
+.append("div")
+.style("opacity", 0)
+.attr("class", "tooltip")
+.style("background-color", "white")
+.style("border", "solid")
+.style("border-width", "2px")
+.style("border-radius", "5px")
+.style("padding", "5px")
+
 const margin_scatter = { top: 20, right: 30, bottom: 30, left: 30 },
   width_scatter = (viewportWidth * 0.4) - margin_scatter.left - margin_scatter.right,
   height_scatter = viewportHeight * 0.6 - margin_scatter.top - margin_scatter.bottom;
@@ -493,7 +504,10 @@ d3.csv("/home").then(function (data) {
     width_bar = innerWidth * 0.5 - margin_bar.left - margin_bar.right,
     height_bar = innerHeight * 0.4 - margin_bar.top - margin_bar.bottom;
 
+
+
   // append the svg object to the body of the page
+
   const svgBarplot = d3.select("#barPlot")
     .append("svg")
     .attr("width", width_bar + margin_bar.left + margin_bar.right)
@@ -578,10 +592,8 @@ d3.csv("/home").then(function (data) {
         .attr("y", d => y_bar(d[1]))
         .attr("height", d => y_bar(d[0]) - y_bar(d[1]))
         .attr("width", x_bar.bandwidth())
+        // .on("mousemove",mousemove);
     })
-  // .attr("onClick", "change(this)")
-  // .attr("for", function(d,i) { return i; })
-
 
   // List of groups = species here = value of the first column called group -> I show them on the X axis
   const groups = data.map(d => (d.Genre));
@@ -662,16 +674,41 @@ d3.csv("/home").then(function (data) {
     .attr("x", d => x_bar(d.data.Genre))
     .attr("y", d => y_bar(d[1]))
     .attr("height", d => y_bar(d[0]) - y_bar(d[1]))
-    .attr("width", x_bar.bandwidth());
+    .attr("width", x_bar.bandwidth()).on('mouseover', function (event,d) {
+      Tooltip.transition()
+      .duration('10').style("opacity", 1);
+      Tooltip
+        .html("North America Sales " + d.data.NA_Sales)
+        .style("left", (event.layerX-150) + "px")
+        .style("top", (event.layerY-100) + "px");
+          // d3.select(this).style("stroke", "black")
+          // .style("opacity", 1);
+   })
+  //  .on("mousemove", function (event,d) {
+  //    console.log(event);
+  //     Tooltip.transition()
+  //     .duration('10')
+  //         .style("opacity", 1);
+        
+       
+  //       // d3.select(this).transition()
+  //       // .attr('opacity', '1'); 
+  //  })
 
-    svgBarplot.append("text")
-    .attr("class", "y label")
-    .attr("text-anchor", "end")
-    .attr("y", 6)
-    .attr("x","19")
-    .attr("dy", ".95em")
-    .attr("transform", "rotate(-90)")
-    .text("life expectancy (years)");
+   .on('mouseout', function (event,d) {
+    //Makes the new div disappear:
+    Tooltip.transition()
+         .duration('10')
+         .style("opacity", 0);});
+
+    // svgBarplot.append("text")
+    // .attr("class", "y label")
+    // .attr("text-anchor", "end")
+    // .attr("y", 6)
+    // .attr("x","19")
+    // .attr("dy", ".95em")
+    // .attr("transform", "rotate(-90)")
+    // .text("life expectancy (years)");
 
     
 });
