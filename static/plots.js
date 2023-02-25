@@ -3,21 +3,22 @@ var output_Sales;
 viewportHeight = window.innerHeight;
 viewportWidth = window.innerWidth;
 var stackedData;
-
+var colors1;
 var NA_checked = true;
 var EU_checked = true;
 var JP_checked = true;
 var Other_checked = true;
-
 var Tooltip = d3.select("#barPlot")
 .append("div")
-.style("opacity", 0)
+.style("opacity", 1)
+.style("visibility", "hidden")
 .attr("class", "tooltip")
 .style("background-color", "white")
 .style("border", "solid")
 .style("border-width", "2px")
 .style("border-radius", "5px")
 .style("padding", "5px")
+.style("pointer-events", "none")
 
 const margin_scatter = { top: 20, right: 30, bottom: 30, left: 30 },
   width_scatter = (viewportWidth * 0.4) - margin_scatter.left - margin_scatter.right,
@@ -46,19 +47,24 @@ const dimNames = { "NA_Sales": 3, "EU_Sales": 4, "JP_Sales": 5, "Other_Sales": 6
 
 const mouseover = (event, d) => {
   Tooltip.transition()
-  .duration('10').style("opacity", 1);
-  var text = "";
+  .duration('10');
+  var text = '<ul class="legend" style="padding-left: 0px;">  ';
   const keys = Object.keys(d.data);
   console.log(keys);
   keys.forEach((key, index) => {
     if(d.data.key != 0 && index!=0){
-      text = text + key + ": " + String(d.data[key]).substring(0,6)+" Million<br>";
+      console.log(key, color1(key))
+      component= '<li><span class='+key+'></span>'+ key + ": "+String(d.data[key]).substring(0,6)+" Million"+'</li><br>'
+      text=text+component
+     // text = text+" "+ color1(key)+" "+ key + ": " + String(d.data[key]).substring(0,6)+" Million<br>";
     }
    
   }); 
+  text=text+"</ul>"
   console.log(text);
   Tooltip
     .html(text)
+    .style("visibility","visible")
     .style("left", (event.layerX-180) + "px")
     .style("top", (event.layerY-120) + "px");
 }
@@ -66,7 +72,7 @@ const mouseover = (event, d) => {
 const mouseout = (event, d) => {
   Tooltip.transition()
          .duration('10')
-         .style("opacity", 0);;
+         .style("visibility","hidden");
 }
 
 
@@ -530,7 +536,7 @@ d3.csv("/home").then(function (data) {
   var rollupDatas = [];
   const subgroups = data.columns.slice(9, 13);
 
-  const color = d3.scaleOrdinal()
+  color1  = d3.scaleOrdinal()
   .domain(subgroups)
   .range(['#e41a1c', '#1f77b4', '#ff7f0e', '#2ca02c'])
 
@@ -542,7 +548,7 @@ d3.csv("/home").then(function (data) {
     .style("color","white")
     .style("background-color", function (d) {  
     
-      return color(d)})
+      return color1(d)})
     .append("input")
     .attr("checked", true)
     .attr("type", "checkbox")
@@ -590,7 +596,7 @@ d3.csv("/home").then(function (data) {
         // Enter in the stack data = loop key per key = group per group
         .data(stackedData)
         .join("g")
-        .attr("fill", d => color(d.key))
+        .attr("fill", d => color1(d.key))
         .selectAll("rect")
         // enter a second time = loop subgroup per subgroup to add all rectangles
         .data(d => d)
@@ -673,7 +679,7 @@ d3.csv("/home").then(function (data) {
     // Enter in the stack data = loop key per key = group per group
     .data(stackedData)
     .join("g")
-    .attr("fill", d => color(d.key))
+    .attr("fill", d => color1(d.key))
     .selectAll("rect")
     // enter a second time = loop subgroup per subgroup to add all rectangles
     .data(d => d)
@@ -681,5 +687,5 @@ d3.csv("/home").then(function (data) {
     .attr("x", d => x_bar(d.data.Genre))
     .attr("y", d => y_bar(d[1]))
     .attr("height", d => y_bar(d[0]) - y_bar(d[1]))
-    .attr("width", x_bar.bandwidth()).on('mouseover',mouseover).on('mouseout',mouseout) 
+    .attr("width", x_bar.bandwidth()).on('mousemove',mouseover).on('mouseout',mouseout);
 });
