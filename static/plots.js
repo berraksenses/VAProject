@@ -93,6 +93,7 @@ d3.csv("/home").then(function (data) {
 
   function selected(event) {
     var selection = event.selection;
+    console.log(selection)
     svgParallel.selectAll("path").style("stroke","steelblue").lower()
     if (selection != null) {
       svgScatterPlot.selectAll("circle").attr("r", function (d) {
@@ -160,7 +161,11 @@ d3.csv("/home").then(function (data) {
       y1[names] = d3.scalePoint().domain(domains_sorted).range([height_parallel, 0]);
     }
   }
-  extents = dimensions.map(function (p) { return [0, 0]; });
+  extents = {}
+  for (p in dimensions){
+    extents[dimensions[p]]=[0, 0]
+  }
+  //dimensions.map(function (p) { return [0, 0]; });
   // Build the X scale -> it find the best position for each Y axis
   x1 = d3.scalePoint().range([0, width_parallel])
     .padding(0.1)
@@ -223,7 +228,7 @@ d3.csv("/home").then(function (data) {
   g_after3.append("g")
     .attr("class", "brush")
     .each(function (d) {
-      d3.select(this).call(y1[d].brush = d3.brushY().extent([[0, 0], [8, height_parallel]]).on("brush start", brushstart).on("brush end", brush_parallel_chart));
+      d3.select(this).call(y1[d].brush = d3.brushY().extent([[0, 0], [8, height_parallel]]).on("end", brush_parallel_chart));
     })
     .selectAll("rect")
     .attr("x", -8)
@@ -246,144 +251,23 @@ d3.csv("/home").then(function (data) {
   function brushstart(event) {
     event.sourceEvent.stopPropagation();
   }
+  const selections = new Map();
   // Handles a brush event, toggling the display of foreground lines.
   function brush_parallel_chart(event, i) {
-    console.log("stai eseguendo anche questo")
-    // svgParallel.selectAll(".forepath").style("display",true)
-    if (event.selection != null) {
-      svgParallel.selectAll(".backpath").style("stroke", "#FFb3a2");
-      svgParallel.selectAll(".forepath").style("stroke", "#69b3a2");
-
-
-      for (var j = 0; j < dimensions.length; ++j) {
-        if (event.target == y1[dimensions[j]].brush) {
-          extents[j] = event.selection.map(y1[dimensions[j]].invert, y1[dimensions[j]]);
-        }
+    //console.log(extents,selection.selection,i)
+    extents[i]=event.selection
+    //console.log(svgParallel.select("path"))
+    console.log(extents)
+    console.log(dimensions)
+    svgParallel.selectAll("path").each(d =>{
+     
+      front = true
+      for(j in dimensions){
+        //extents[ dimensions[j]][1] = y1[ dimensions[j]]( extents[ dimensions[j]][1] ) 
+        if(extents[ dimensions[j]][0]==0) {continue}
+        //extents[dimensions[j]][1] <= d[p] && d[p] <= extents[dimensions[j]][0];
       }
-      foreground.style("display", function (d) {
-        return dimensions.every(function (p, i) {
-
-          if (extents[i][0] == 0) {
-            return true;
-          }
-          return extents[i][1] <= d[p] && d[p] <= extents[i][0];
-        }) ? null : "none";
-
-      });
-
-      var dneme;
-      svgScatterPlot.selectAll("circle").attr("r", function (d) {
-        dimensions.every(function (element, index) {
-          if (extents[index][1] <= d[element] && d[element] <= extents[index][0] || extents[index][0] == 0) {
-
-            dneme = true;
-            return true
-          }
-          else {
-            dneme = false;
-            return false
-          }
-        }
-
-        )
-        if (dneme) {
-          return "3"
-        }
-        else {
-          return "1"
-        }
-      })
-      var bok;
-      svgScatterPlot.selectAll("circle").style("opacity", function (d) {
-        dimensions.every(function (p, i) {
-          if (extents[i][1] <= d[p] && d[p] <= extents[i][0] || extents[i][0] == 0) {
-            bok = true;
-            return true
-          }
-          else {
-            bok = false;
-            return false
-          }
-        }
-        )
-        if (bok) {
-          return "1"
-        }
-        else {
-          return "0.3"
-        }
-      })
-
-    }
-    else {
-
-      extents[dimNames[i]] = [0, 0];
-      var truth_val = extents.every(element => element.every(e => e == 0));
-      if (truth_val) {
-        svgParallel.selectAll(".backpath").style("stroke", "steelblue");
-        svgParallel.selectAll(".forepath").style("stroke", "steelblue");
-        svgScatterPlot.selectAll("circle").style("opacity", 0.3);
-        svgScatterPlot.selectAll("circle").attr("r", 2);
-
-      }
-      else {
-
-        var dneme;
-        svgScatterPlot.selectAll("circle").attr("r", function (d) {
-          dimensions.every(function (element, index) {
-            if (extents[index][1] <= d[element] && d[element] <= extents[index][0] || extents[index][0] == 0) {
-
-              dneme = true;
-              return true
-            }
-            else {
-              dneme = false;
-              return false
-            }
-          }
-
-          )
-          if (dneme) {
-            return "3"
-          }
-          else {
-            return "1"
-          }
-        })
-        var bok;
-        svgScatterPlot.selectAll("circle").style("opacity", function (d) {
-          dimensions.every(function (p, i) {
-            if (extents[i][1] <= d[p] && d[p] <= extents[i][0] || extents[i][0] == 0) {
-              bok = true;
-              return true
-            }
-            else {
-              bok = false;
-              return false
-            }
-          }
-          )
-          if (bok) {
-            return "1"
-          }
-          else {
-            return "0.3"
-          }
-        })
-
-
-
-      }
-      // console.log(extents);
-      // console.log(extents.every(element => element.every(e => e == 0)));
-      // svgScatterPlot.selectAll("circle").style("opacity",0.3);
-      // svgScatterPlot.selectAll("circle").attr("r",2);
-      // // svgParallel.selectAll(".forepath").style("display",false);
-
-      // svgParallel.selectAll(".backpath").style("stroke","steelblue")
-      // svgParallel.selectAll(".forepath").style("stroke","steelblue")
-
-    }
+    })
   }
 
 
