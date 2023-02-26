@@ -22,11 +22,15 @@ var Tooltip = d3.select("#barPlot")
 
 const margin_scatter = { top: 20, right: 30, bottom: 30, left: 30 },
   width_scatter = (viewportWidth * 0.4) - margin_scatter.left - margin_scatter.right,
-  height_scatter = viewportHeight * 0.6 - margin_scatter.top - margin_scatter.bottom;
+  height_scatter = viewportHeight * 0.5 - margin_scatter.top - margin_scatter.bottom;
 
-const margin_parallel = { top: 20, right: 10, bottom: 30, left: 30 },
+const margin_parallel = { top: 20, right: 10, bottom: 10, left: 30 },
   width_parallel = (viewportWidth * 0.55) - margin_parallel.left - margin_parallel.right,
-  height_parallel = viewportHeight * 0.6 - margin_parallel.top - margin_parallel.bottom;
+  height_parallel = viewportHeight * 0.55 - margin_parallel.top - margin_parallel.bottom;
+
+
+  var width_slider = (viewportWidth -200),
+  height_slider = 40 ;
 
 const svgScatterPlot = d3.select("#scatterplot")
   .append("svg")
@@ -35,6 +39,7 @@ const svgScatterPlot = d3.select("#scatterplot")
   .append("g")
   .attr("transform", `translate(${margin_scatter.left}, ${margin_scatter.top})`);
 
+
 const svgParallel = d3.select("#parallelCoordinates")
   .append("svg")
   .attr("width", width_parallel + margin_parallel.left + margin_parallel.right)
@@ -42,8 +47,22 @@ const svgParallel = d3.select("#parallelCoordinates")
   .append("g")
   .attr("transform", `translate(${margin_parallel.left}, ${margin_parallel.top})`);
 
+const svgSlider = d3.select("#range-slider")
+  .append("svg")
+  .attr("width", width_slider)
+  .attr("height", height_slider);
+
 const dimNames = { "NA_Sales": 3, "EU_Sales": 4, "JP_Sales": 5, "Other_Sales": 6, "Global_Sales": 7 };
 
+function range(start, end) {
+  var ans = [];
+  for (let i = start; i <= end; i++) {
+      ans.push(i);
+  }
+  return ans;
+}
+
+const slider_years = range(1980,2016);
 
 const mouseover = (event, d) => {
   Tooltip.transition()
@@ -74,8 +93,68 @@ const mouseout = (event, d) => {
          .style("visibility","hidden");
 }
 
+var mySlider;
+var dateExtnt;
 
 d3.csv("/home").then(function (data) {
+//slider
+
+x = d3.scalePoint()
+    .domain(slider_years)
+    .range([0, width_slider])
+    .padding(0.5)
+
+var xAxis = d3.axisBottom(x);
+
+  const bar = svgSlider.append("g")
+      .attr("fill", "#d4cfcf")
+    .selectAll("rect")
+    .data(x.domain())
+    .join("rect").attr("padding", "5px")
+      .attr("x", d => x(d) - x.step() / 2)
+      .attr("height", 17)
+      .attr("width", x.step()-1);
+      
+svgSlider.append("g").attr("class", "axis axis--x")
+.attr("transform", "translate(0," + 17+ ")").call(xAxis);
+  const brush = d3.brushX().extent([[0, 0], [width_slider, 16]])
+      .on("start brush end", brushed)
+      .on("end.snap", brushended);
+    // svgSlider.append("g")
+    //   .attr("font-size", "0.6em")
+    //   .attr("text-anchor", "middle")
+    //   .attr("transform", `translate(${x.bandwidth() / 2},${height_slider-8})`)
+    // .selectAll("text")
+    // .data(x.domain())
+    // .join("text")
+    //   .attr("x", d => x(d))
+    //   .attr("dy", "0.65em")
+    //   .text(d => d);
+
+      svgSlider.append("g")
+      .call(brush);
+
+  function brushed({selection}) {
+    if (selection) {
+      const range = x.domain().map(x);
+      const i0 = d3.bisectRight(range, selection[0]);
+      const i1 = d3.bisectRight(range, selection[1]);
+      bar.attr("fill", (d, i) => i0 <= i && i < i1 ? "orange" : null);
+      svgSlider.property("value", x.domain().slice(i0, i1)).dispatch("input");
+    } else {
+      bar.attr("fill", null);
+      svgSlider.property("value", []).dispatch("input");
+    }
+  }
+
+  function brushended({selection, sourceEvent}) {
+    if (!sourceEvent || !selection) return;
+    const range = x.domain().map(x), dx = x.step() / 2;
+    const x0 = range[d3.bisectRight(range, selection[0])] - dx;
+    const x1 = range[d3.bisectRight(range, selection[1]) - 1] + dx;
+    d3.select(this).transition().call(brush.move, x1 > x0 ? [x0, x1] : null);
+  }
+
   //scatter plot
   const x_scatter = d3.scaleSqrt()
     .domain(d3.extent(data, function (d) { return parseFloat(d.X1); }))
@@ -205,7 +284,8 @@ d3.csv("/home").then(function (data) {
       domains_sorted = data.map(function (p) {
         if (names == "Year") {
           p[names] = p[names].substring(0, p[names].length - 2);
-        } return p[names];
+        }
+        return p[names];
       }).sort();
       y1[names] = d3.scalePoint().domain(domains_sorted).range([height_parallel, 0]);
     }
@@ -512,9 +592,9 @@ d3.csv("/home").then(function (data) {
 
   //----Barplots
 
-  const margin_bar = { top: 10, right: 0, bottom: 30, left: 50 },
+  const margin_bar = { top: 30, right: 0, bottom: 20, left: 50 },
     width_bar = innerWidth * 0.5 - margin_bar.left - margin_bar.right,
-    height_bar = innerHeight * 0.4 - margin_bar.top - margin_bar.bottom;
+    height_bar = innerHeight * 0.35 - margin_bar.top - margin_bar.bottom;
 
 
 
@@ -551,7 +631,7 @@ d3.csv("/home").then(function (data) {
     .append("input")
     .attr("checked", true)
     .attr("type", "checkbox")
-    .attr("transform", function (d, i) { return "translate(0," + i * 10 + ")" })
+    .attr("transform", function (d, i) { return "translate(0," + 10 + i * 10 + ")" })
     .attr("id", function (d, i) { return i; })
     .on("click", function (d) {
       if (d.target.id == 0) {

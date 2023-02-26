@@ -1,5 +1,6 @@
 {
   "dependencies": {
-    "json2csv": "^6.0.0-alpha.2"
+    "json2csv": "^6.0.0-alpha.2",
+    "range-slider-input": "^2.4.3"
   }
 }
