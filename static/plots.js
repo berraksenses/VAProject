@@ -50,9 +50,8 @@ const mouseover = (event, d) => {
   .duration('10');
   var text = '<ul class="legend" style="padding-left: 0px;">  ';
   const keys = Object.keys(d.data);
-  console.log(keys);
   keys.forEach((key, index) => {
-    if(d.data.key != 0 && index!=0){
+    if(d.data[key] != 0 && index!=0){
       console.log(key, color1(key))
       component= '<li><span class='+key+'></span>'+ key + ": "+String(d.data[key]).substring(0,6)+" Million"+'</li><br>'
       text=text+component
@@ -604,7 +603,7 @@ d3.csv("/home").then(function (data) {
         .attr("x", d => x_bar(d.data.Genre))
         .attr("y", d => y_bar(d[1]))
         .attr("height", d => y_bar(d[0]) - y_bar(d[1]))
-        .attr("width", x_bar.bandwidth())
+        .attr("width", x_bar.bandwidth()).on('mousemove',mouseover).on('mouseout',mouseout)
         // .on("mousemove",mousemove);
     })
 
