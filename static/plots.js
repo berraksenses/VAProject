@@ -30,8 +30,10 @@ const margin_parallel = { top: 20, right: 10, bottom: 10, left: 30 },
 
 
   var width_slider = (viewportWidth -200),
-  height_slider = 40 ;
+  height_slider = 20 ;
 
+  var maxSlider =37;
+  var minSlider = 0;
 const svgScatterPlot = d3.select("#scatterplot")
   .append("svg")
   .attr("width", width_scatter + margin_scatter.left + margin_scatter.right)
@@ -50,7 +52,7 @@ const svgParallel = d3.select("#parallelCoordinates")
 const svgSlider = d3.select("#range-slider")
   .append("svg")
   .attr("width", width_slider)
-  .attr("height", height_slider);
+  .attr("height", 40);
 
 const dimNames = { "NA_Sales": 3, "EU_Sales": 4, "JP_Sales": 5, "Other_Sales": 6, "Global_Sales": 7 };
 
@@ -93,9 +95,6 @@ const mouseout = (event, d) => {
          .style("visibility","hidden");
 }
 
-var mySlider;
-var dateExtnt;
-
 d3.csv("/home").then(function (data) {
 //slider
 
@@ -112,24 +111,15 @@ var xAxis = d3.axisBottom(x);
     .data(x.domain())
     .join("rect").attr("padding", "5px")
       .attr("x", d => x(d) - x.step() / 2)
-      .attr("height", 17)
+      .attr("height", 10)
       .attr("width", x.step()-1);
       
 svgSlider.append("g").attr("class", "axis axis--x")
-.attr("transform", "translate(0," + 17+ ")").call(xAxis);
-  const brush = d3.brushX().extent([[0, 0], [width_slider, 16]])
-      .on("start brush end", brushed)
+.attr("transform", "translate(0," + 10+ ")").call(xAxis);
+
+  const brush = d3.brushX().extent([[0, 0], [width_slider, 11]])
+      .on("end", brushed)
       .on("end.snap", brushended);
-    // svgSlider.append("g")
-    //   .attr("font-size", "0.6em")
-    //   .attr("text-anchor", "middle")
-    //   .attr("transform", `translate(${x.bandwidth() / 2},${height_slider-8})`)
-    // .selectAll("text")
-    // .data(x.domain())
-    // .join("text")
-    //   .attr("x", d => x(d))
-    //   .attr("dy", "0.65em")
-    //   .text(d => d);
 
       svgSlider.append("g")
       .call(brush);
@@ -139,12 +129,16 @@ svgSlider.append("g").attr("class", "axis axis--x")
       const range = x.domain().map(x);
       const i0 = d3.bisectRight(range, selection[0]);
       const i1 = d3.bisectRight(range, selection[1]);
-      bar.attr("fill", (d, i) => i0 <= i && i < i1 ? "orange" : null);
+      bar.attr("fill", (d, i) => i0 <= i && i < i1 ? "#918d8d" : null);
       svgSlider.property("value", x.domain().slice(i0, i1)).dispatch("input");
+      console.log(i0);
+      console.log(i1);
     } else {
       bar.attr("fill", null);
-      svgSlider.property("value", []).dispatch("input");
+      svgSlider.property("value", range(1980,2016)).dispatch("input");
     }
+    // console.log(i0);
+   console.log(svgSlider.property("value"));
   }
 
   function brushended({selection, sourceEvent}) {
