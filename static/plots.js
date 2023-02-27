@@ -29,10 +29,8 @@ const margin_parallel = { top: 20, right: 10, bottom: 10, left: 30 },
   width_parallel = (viewportWidth * 0.55) - margin_parallel.left - margin_parallel.right,
   height_parallel = viewportHeight * 0.48 - margin_parallel.top - margin_parallel.bottom;
 
-
   var width_slider = (viewportWidth -200),
   height_slider = 40 ;
-
 
 const dimNames = { "NA_Sales": 3, "EU_Sales": 4, "JP_Sales": 5, "Other_Sales": 6, "Global_Sales": 7 };
 
@@ -58,7 +56,6 @@ const mouseover = (event, d) => {
       text=text+component
      // text = text+" "+ color1(key)+" "+ key + ": " + String(d.data[key]).substring(0,6)+" Million<br>";
     }
-   
   }); 
   text=text+"</ul>"
   Tooltip
@@ -152,9 +149,7 @@ const svgSlider = d3.select("#range-slider")
           bar.attr("fill", null);
           svgSlider.property("value", []).dispatch("input");
         }
-
       }
-    
       function brushended({selection, sourceEvent}) {
         if (!sourceEvent || !selection) return;
         const range = x.domain().map(x), dx = x.step() / 2;
@@ -165,7 +160,8 @@ const svgSlider = d3.select("#range-slider")
         d3.select("#parallelCoordinates").selectAll("svg").remove();
         d3.select("#scatterplot").selectAll("svg").remove();
         d3.select("#range-slider").selectAll("svg").remove();
-
+        d3.select("#checkbox").selectAll("input").remove();
+        d3.select("#checkbox").selectAll("label").remove();
         // slider_years
         load_data(slider_years[from],slider_years[to-1]);
       }
