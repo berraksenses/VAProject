@@ -23,11 +23,11 @@ var Tooltip = d3.select("#barPlot")
 
 const margin_scatter = { top: 20, right: 30, bottom: 30, left: 30 },
   width_scatter = (viewportWidth * 0.4) - margin_scatter.left - margin_scatter.right,
-  height_scatter = viewportHeight * 0.5 - margin_scatter.top - margin_scatter.bottom;
+  height_scatter = viewportHeight * 0.48 - margin_scatter.top - margin_scatter.bottom;
 
 const margin_parallel = { top: 20, right: 10, bottom: 10, left: 30 },
   width_parallel = (viewportWidth * 0.55) - margin_parallel.left - margin_parallel.right,
-  height_parallel = viewportHeight * 0.55 - margin_parallel.top - margin_parallel.bottom;
+  height_parallel = viewportHeight * 0.48 - margin_parallel.top - margin_parallel.bottom;
 
 
   var width_slider = (viewportWidth -200),
@@ -74,6 +74,7 @@ const mouseout = (event, d) => {
          .style("visibility","hidden");
 }
 function load_data(from,to){
+  var maxglobalSum = 0;
   const svgScatterPlot = d3.select("#scatterplot")
   .append("svg")
   .attr("width", width_scatter + margin_scatter.left + margin_scatter.right)
@@ -174,7 +175,7 @@ const svgSlider = d3.select("#range-slider")
         .domain(d3.extent(data, function (d) { return parseFloat(d.X1); }))
         .range([3, width_scatter]);
       svgScatterPlot.append("g")
-        .attr("transform", `translate(0, ${height_scatter})`)
+        .attr("transform", `translate(0, ${height_scatter+5})`)
         .call(d3.axisBottom(x_scatter));
     
       // Add Y axis
@@ -220,7 +221,7 @@ const svgSlider = d3.select("#range-slider")
         .style("fill", function (d) { return color_mean(d.color) })
     
       var brushTot = d3.brush()
-        .extent([[0, 0], [width_scatter, height_scatter]])
+        .extent([[0, 0], [width_scatter+6, height_scatter+6]])
         .on("end", selected);
     
       svgScatterPlot.append("g")
@@ -409,8 +410,7 @@ const svgSlider = d3.select("#range-slider")
                 return true;
               }
               return extents[i][1] <= d[p] && d[p] <= extents[i][0];
-            }) ? null : "none";
-          }
+            }) ? null : "none";}
           );
     
           var dneme;
@@ -426,7 +426,6 @@ const svgSlider = d3.select("#range-slider")
                 return false
               }
             }
-    
             )
             if (dneme) {
               return "3"
@@ -627,22 +626,62 @@ const svgSlider = d3.select("#range-slider")
     
       // List of subgroups = header of the csv files = soil condition here
     
-      var rollupDatas = [];
       const subgroups = data.columns.slice(9, 13);
     
       color1  = d3.scaleOrdinal()
       .domain(subgroups)
       .range(['#e41a1c', '#1f77b4', '#ff7f0e', '#2ca02c'])
     
+      function rollupGlobal(xs) {
+  
+        var sumglobal = d3.sum(xs, x => x.Global_Sales);
+        if(maxglobalSum<=sumglobal){
+          maxglobalSum = sumglobal;
+        }
     
+      return sumglobal;
+    }
+    var globalNumber = d3.rollups(
+      data,
+      xs => rollupGlobal(xs),
+      d => d.Genre).map(([k, v]) => ({ Genre: k, globalSale: v }));
+    
+          function rollupFnc(xs) {
+            datas =
+            {
+              "JP": 0.0,
+              "EU": 0.0,
+              "NA": 0.0,
+              "Other": 0.0
+            }
+        
+            if (JP_checked) {
+              datas.JP = d3.sum(xs, x => x.JP_Sales);
+            }
+            if (EU_checked) {
+              datas.EU = d3.sum(xs, x => x.EU_Sales);
+            }
+            if (NA_checked) {
+              datas.NA = d3.sum(xs, x => x.NA_Sales);
+            }
+            if (Other_checked) {
+              datas.Other = d3.sum(xs, x => x.Other_Sales);
+            }
+            return [datas];
+          }
+          output_Sales = d3.rollups(
+            data,
+            xs => rollupFnc(xs),
+            d => d.Genre
+          ).map(([k, v]) => ({ Genre: k, Sales: v }));
+        
       d3.select("#checkbox").selectAll("input")
         .data(subgroups)
         .enter().append("label")
         .text(function (d) { return d; })
-        .style("color","white")
-        .style("background-color", function (d) {  
-        
-          return color1(d)})
+        .style("color","black")
+        // .style("background-color", function (d) { 
+        //   return color1(d)})
         .append("input")
         .attr("checked", true)
         .attr("type", "checkbox")
@@ -701,10 +740,11 @@ const svgSlider = d3.select("#range-slider")
             .attr("width", x_bar.bandwidth()).on('mousemove',mouseover).on('mouseout',mouseout)
             // .on("mousemove",mousemove);
         })
-    
+//
+
       // List of groups = species here = value of the first column called group -> I show them on the X axis
       const groups = data.map(d => (d.Genre));
-    
+
       // Add X axis
       const x_bar = d3.scaleBand()
         .domain(groups)
@@ -716,41 +756,11 @@ const svgSlider = d3.select("#range-slider")
     
       // Add Y axis
       const y_bar = d3.scaleLinear()
-        .domain([0, 1000])
+        .domain([0,maxglobalSum +60])
         .range([height_bar, 0]);
       svgBarplot.append("g")
         .call(d3.axisLeft(y_bar));
-    
-      function rollupFnc(xs) {
-        datas =
-        {
-          "JP": 0.0,
-          "EU": 0.0,
-          "NA": 0.0,
-          "Other": 0.0
-        }
-    
-        if (JP_checked) {
-          datas.JP = d3.sum(xs, x => x.JP_Sales);
-        }
-        if (EU_checked) {
-          datas.EU = d3.sum(xs, x => x.EU_Sales);
-        }
-        if (NA_checked) {
-          datas.NA = d3.sum(xs, x => x.NA_Sales);
-        }
-        if (Other_checked) {
-          datas.Other = d3.sum(xs, x => x.Other_Sales);
-        }
-        return [datas];
-      }
-      output_Sales = d3.rollups(
-        data,
-        xs => rollupFnc(xs),
-        d => d.Genre
-      )
-        .map(([k, v]) => ({ Genre: k, Sales: v }));
-    
+   
       // console.log(output_Sales);
       var barData = [];
       for (let i = 0; i < output_Sales.length; i++) {
