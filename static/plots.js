@@ -8,6 +8,7 @@ var NA_checked = true;
 var EU_checked = true;
 var JP_checked = true;
 var Other_checked = true;
+
 var Tooltip = d3.select("#barPlot")
 .append("div")
 .style("opacity", 1)
@@ -32,7 +33,48 @@ const margin_parallel = { top: 20, right: 10, bottom: 10, left: 30 },
   var width_slider = (viewportWidth -200),
   height_slider = 40 ;
 
-const svgScatterPlot = d3.select("#scatterplot")
+
+const dimNames = { "NA_Sales": 3, "EU_Sales": 4, "JP_Sales": 5, "Other_Sales": 6, "Global_Sales": 7 };
+
+function range(start, end) {
+  var ans = [];
+  for (let i = start; i <= end; i++) {
+      ans.push(i);
+  }
+  return ans;
+}
+
+const slider_years = range(1980,2016);
+console.log(slider_years);
+const mouseover = (event, d) => {
+  Tooltip.transition()
+  .duration('10');
+  var text = '<ul class="legend" style="padding-left: 0px;">  ';
+  const keys = Object.keys(d.data);
+  keys.forEach((key, index) => {
+    if(d.data[key] != 0 && index!=0){
+      // console.log(key, color1(key))
+      component= '<li><span class='+key+'></span>'+ key + ": "+String(d.data[key]).substring(0,6)+" Million"+'</li><br>'
+      text=text+component
+     // text = text+" "+ color1(key)+" "+ key + ": " + String(d.data[key]).substring(0,6)+" Million<br>";
+    }
+   
+  }); 
+  text=text+"</ul>"
+  Tooltip
+    .html(text)
+    .style("visibility","visible")
+    .style("left", (event.layerX-180) + "px")
+    .style("top", (event.layerY-120) + "px");
+}
+
+const mouseout = (event, d) => {
+  Tooltip.transition()
+         .duration('10')
+         .style("visibility","hidden");
+}
+function load_data(from,to){
+  const svgScatterPlot = d3.select("#scatterplot")
   .append("svg")
   .attr("width", width_scatter + margin_scatter.left + margin_scatter.right)
   .attr("height", height_scatter + margin_scatter.top + margin_scatter.bottom)
@@ -52,49 +94,9 @@ const svgSlider = d3.select("#range-slider")
   .attr("width", width_slider)
   .attr("height", height_slider);
 
-const dimNames = { "NA_Sales": 3, "EU_Sales": 4, "JP_Sales": 5, "Other_Sales": 6, "Global_Sales": 7 };
-
-function range(start, end) {
-  var ans = [];
-  for (let i = start; i <= end; i++) {
-      ans.push(i);
-  }
-  return ans;
-}
-
-const slider_years = range(1980,2016);
-
-const mouseover = (event, d) => {
-  Tooltip.transition()
-  .duration('10');
-  var text = '<ul class="legend" style="padding-left: 0px;">  ';
-  const keys = Object.keys(d.data);
-  keys.forEach((key, index) => {
-    if(d.data[key] != 0 && index!=0){
-      console.log(key, color1(key))
-      component= '<li><span class='+key+'></span>'+ key + ": "+String(d.data[key]).substring(0,6)+" Million"+'</li><br>'
-      text=text+component
-     // text = text+" "+ color1(key)+" "+ key + ": " + String(d.data[key]).substring(0,6)+" Million<br>";
-    }
-   
-  }); 
-  text=text+"</ul>"
-  console.log(text);
-  Tooltip
-    .html(text)
-    .style("visibility","visible")
-    .style("left", (event.layerX-180) + "px")
-    .style("top", (event.layerY-120) + "px");
-}
-
-const mouseout = (event, d) => {
-  Tooltip.transition()
-         .duration('10')
-         .style("visibility","hidden");
-}
-function load_data(from,to){
   const sito = "/home?from=" + String(from)+"&to=" + String(to);
   console.log(sito);
+
   d3.csv(sito).then(function (data) {
     //slider
     
@@ -144,14 +146,12 @@ function load_data(from,to){
           to = i1;
           bar.attr("fill", (d, i) => i0 <= i && i < i1 ? "orange" : null);
           svgSlider.property("value", x.domain().slice(i0, i1)).dispatch("input");
-     
           
         } else {
           bar.attr("fill", null);
           svgSlider.property("value", []).dispatch("input");
         }
 
-        // console.log(svgSlider.property("value"));
       }
     
       function brushended({selection, sourceEvent}) {
@@ -160,10 +160,13 @@ function load_data(from,to){
         const x0 = range[d3.bisectRight(range, selection[0])] - dx;
         const x1 = range[d3.bisectRight(range, selection[1]) - 1] + dx;
         d3.select(this).transition().call(brush.move, x1 > x0 ? [x0, x1] : null);
-        console.log(from);
-        console.log(to);
+        d3.select("#barPlot").selectAll("svg").remove();
+        d3.select("#parallelCoordinates").selectAll("svg").remove();
+        d3.select("#scatterplot").selectAll("svg").remove();
+        d3.select("#range-slider").selectAll("svg").remove();
+
         // slider_years
-        load_data(slider_years[from],slider_years[to]);
+        load_data(slider_years[from],slider_years[to-1]);
       }
     
       //scatter plot
@@ -295,6 +298,9 @@ function load_data(from,to){
           domains_sorted = data.map(function (p) {
             if (names == "Year") {
               p[names] = p[names].substring(0, p[names].length - 2);
+              // if(p[names] == "2016"){
+              //   // console.log("2016 cikti");
+              // }
             }
             return p[names];
           }).sort();
@@ -348,7 +354,7 @@ function load_data(from,to){
         .append("text")
         .style("text-anchor", "middle")
         .attr("y", -10)
-        .text(function (d) { console.log(d);return d; }).style("fill", "black")
+        .text(function (d) { return d; }).style("fill", "black")
         //.style("text-shadow", "0 5px 0 #fff, 1px 0 0 #000, 0 -1px 0 #fff, -1px 0 0 #fff");
     
       g_before3.append("g")
