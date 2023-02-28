@@ -162,6 +162,7 @@ const svgSlider = d3.select("#range-slider")
         d3.select("#range-slider").selectAll("svg").remove();
         d3.select("#checkbox").selectAll("input").remove();
         d3.select("#checkbox").selectAll("label").remove();
+        d3.select("#treemap").selectAll("svg").remove();
         // slider_years
         load_data(slider_years[from],slider_years[to-1]);
       }
@@ -226,9 +227,7 @@ const svgSlider = d3.select("#range-slider")
     
       function selected(event) {
         var selection = event.selection;
-    
-        // svgParallel.selectAll("path").style("stroke","steelblue").lower()
-    
+        
         if (selection != null) {
           svgScatterPlot.selectAll("circle").attr("r", function (d) {
             if ((x_scatter(d.X1) > selection[0][0]) && (x_scatter(d.X1) < selection[1][0]) && (y_scatter(d.X2) > selection[0][1]) && (y_scatter(d.X2) < selection[1][1])) {
@@ -264,7 +263,6 @@ const svgSlider = d3.select("#range-slider")
         else {
           svgScatterPlot.selectAll("circle").style("opacity", 0.3);
           svgScatterPlot.selectAll("circle").attr("r", 2);
-          // svgParallel.selectAll(".forepath").style("display",false);
           svgParallel.selectAll(".forepath").style("stroke", "#69b3a2").style("opacity",0.5);
           svgParallel.selectAll(".backpath").style("stroke", "#69b3a2").style("opacity",0.5);
           
@@ -509,99 +507,158 @@ const svgSlider = d3.select("#range-slider")
           }
         }
       }
-    
-      //   // The path function take a row of the csv as input, and return x and y coordinates of the line to draw for this raw.
-      // function path(d) {
-      //     return d3.line()(dimensions.map(function(p) { 
-      //         return [x1(p), y1[p](d[p])]; }));
-      // }
-      //   // Draw the lines
-      // svgParallel
-      // .selectAll("myPath")
-      // .data(data)
-      // .join("path")
-      // .attr("d",  path)
-      // .style("fill", "none")
-      // .style("stroke", "#69b3a2")
-      // .style("opacity", 0.3)
-    
-      // // Draw the axis:
-      // svgParallel.selectAll("myAxis")
-      // // For each dimension of the dataset I add a 'g' element:
-      // .data(dimensions).enter()
-      // .append("g")
-      // // I translate this element to its right position on the x axis
-      // .attr("transform", function(d) { return "translate(" + x1(d) + ")"; })
-      // // And I build the axis with the call function
-      // .each(function(d) { d3.select(this).call(d3.axisLeft().scale(y1[d])); })
-      // // Add axis title
-      // .append("text")
-      //     .style("text-anchor", "middle")
-      //     .attr("y", -9)
-      //     .text(function(d) { return d; })
-      //     .style("fill", "black")
-    
-      //usttekini trial ende kadar uncomment
-    
+
       //---------------------------Treemap
     
-      // var margin_tree = {top: 10, right: 10, bottom: 10, left: 10},
-      //   width_tree = 445 - margin_tree.left - margin_tree.right,
-      //   tree_height = 445 - margin_tree.top - margin_tree.bottom;
-    
-      // // append the svg object to the body of the page
-      // var svg = d3.select("#treemap")
-      // .append("svg")
-      //   .attr("width", width_tree + margin_tree.left + margin_tree.right)
-      //   .attr("height", tree_height + margin_tree.top + margin_tree.bottom)
-      // .append("g")
-      //   .attr("transform",
-      //         "translate(" + margin_tree.left + "," + margin_tree.top + ")");
-    
-      //         let groups = d3.rollup(data,
-      //             function(d) { return d.length; },
-      //             function(d) { return d.Genre; },
-      //             function(d) { return d.Platform; },
-      //             function(d) { return d.Publisher; }
-      //            );
-      //     console.log(groups);
-      //     let root = d3.hierarchy(groups);
-      //     // console.log(root[0])
-      //     root.sum(function(d) {
-      //         // console.log(d[1]);
-      //         return d[1];
-      //       });
-    
-      //         d3.treemap()
-      //         .size([width_tree, height_parallel])
-      //         .padding(0.1)
-      //         (root);
-    
-      //       // use this information to add rectangles:
-      //       svg
-      //         .selectAll("rect")
-      //         .data(root.leaves())
-      //         .enter()
-      //         .append("rect")
-      //           .attr('x', function (d) { return d.x0; })
-      //           .attr('y', function (d) { return d.y0; })
-      //           .attr('width', function (d) { return d.x1 - d.x0; })
-      //           .attr('height', function (d) { return d.y1 - d.y0; })
-      //           .style("stroke", "black")
-      //           .style("fill", "#69b3a2");
-    
-      //       // and to add the text labels
-      //       svg
-      //         .selectAll("text")
-      //         .data(root.leaves())
-      //         .enter()
-      //         .append("text")
-      //           .attr("x", function(d){ return d.x0+10})    // +10 to adjust position (more right)
-      //           .attr("y", function(d){ return d.y0+20})    // +20 to adjust position (lower)
-      //           .text(function(d){ return d.data.name})
-      //           .attr("font-size", "15px")
-      //           .attr("fill", "white");
-    
+      let viewportHeight = window.innerHeight;
+      let viewportWidth = window.innerWidth;
+      // set the dimensions and margins of the graph
+      var margin = {top: 10, right: 10, bottom: 10, left: 10},
+        width = viewportWidth*0.4 - margin.left - margin.right,
+        height = viewportHeight*0.4 - margin.top - margin.bottom;
+      
+      var x_tree = d3.scaleLinear().domain([0, viewportWidth*0.4 ]).range([-10, viewportWidth*0.4-10 ]),
+          y_tree = d3.scaleLinear().domain([0,  viewportHeight*0.4]).range([-10,  viewportHeight*0.4-10])
+      
+      // append the svg object to the body of the page
+      var svgTree = d3.select("#treemap")
+      .append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+        .attr("transform",
+              "translate(" + margin.left + "," + margin.top + ")");
+      
+      var root
+      
+      var currentDepth=0
+      
+      let color_tree = d3.scaleSequential([8, 0], d3.interpolateCool);
+      
+      function parseData(data){
+          var root2
+          let groups = d3.rollup(data,
+              function(d) { return  d3.sum(d, v => v.Global_Sales)},
+              function(d) { return d.Genre; },
+              function(d) { return d.Platform; },
+              function(d) { return d.Publisher; }
+             );
+          // console.log(groups)
+          root2 = d3.hierarchy(groups);
+          root2.sum(function(d){return d[1]}).sort((a, b) => b.height - a.height || b.value - a.value);
+      
+          return root2
+      }
+      
+      function zoom(a,current){
+          currentDepth = current.depth+1;
+          var t = d3.transition()
+          .duration(800)
+          .ease(d3.easeCubicOut);
+      
+          x_tree.domain([current.x0, current.x1]);
+          y_tree.domain([current.y0, current.y1]); 
+          svgTree.selectAll("rect")    
+          .transition(t)
+          .attr("x", function(d) { return x_tree(d.x0) ; })
+          .attr("y", function(d) { return y_tree(d.y0) ; })
+          .attr("width", function(d) { return x_tree(d.x1) - x_tree(d.x0) ; })
+          .attr("height", function(d) { return y_tree(d.y1) - y_tree(d.y0) ; });
+      
+          svgTree.selectAll("text")    
+          .transition(t)
+          .attr("x", function(d) { return x_tree(d.x0)+5 ; })
+          .attr("y", function(d) { return y_tree(d.y0)+20 ; })
+      
+          svgTree.selectAll("rect").filter(function(d) { return d.ancestors(); })
+          .style("visibility", function(d) { return "hidden"});
+          svgTree.selectAll("rect").filter(function(d) { return d.depth == currentDepth; })
+           .style("visibility", function(d) { return "visible"});
+          svgTree
+           .selectAll("text") .filter(function(d) { return d.ancestors(); })
+           .style("visibility", function(d) { return "hidden"});
+           svgTree
+           .selectAll("text").filter(function(d) { return d.depth == currentDepth; })
+           .style("visibility", function(d) { return "visible"}).text(function(d){ return len_tezt(d.data[0],15, x_tree(d.x1) - x_tree(d.x0),y_tree(d.y1) - y_tree(d.y0))});
+      }
+      function render(elements){
+        svgTree.selectAll("rect").data(elements)
+        .enter()
+        .append("rect")
+          .attr('x', function (d) { return d.x0; })
+          .attr('y', function (d) { return d.y0; })
+          .attr('width', function (d) { return d.x1 - d.x0; })
+          .attr('height', function (d) { return d.y1 - d.y0; })
+          .attr("id", function(d){ return "node-"+d.data[0];})
+          .attr("class",function(d){ return "node-"+d.depth;})
+          .style("stroke", "black")
+          .style("fill", "slateblue")
+          .text(function(d){ return d.data[0] })
+          .on('click',function(a,d){ zoom(a,d)})
+          .filter(function(d) { return d.depth!=1; })
+          .style("visibility", function() {
+              return "hidden"
+          })
+        
+      
+      // and to add the text labels
+      svgTree
+        .selectAll("text")
+        .data(elements)
+        .enter()
+        .append("text")
+          .attr("x", function(d){ return d.x0+5})    // +10 to adjust position (more right)
+          .attr("y", function(d){ return d.y0+20})    // +20 to adjust position (lower)
+          .attr("font-size", "15px")
+          .attr("fill", "white")  
+          .attr('data-width', (d) => d.x1 - d.x0)
+          .attr('font-size', '15px')
+      svgTree.selectAll("text")
+          .filter(function(d) {console.log(d.text);return d.depth==  1; })
+          .text(function(d){ return len_tezt(d.data[0],15,  d.x1 - d.x0, d.y1-d.y0)})
+      svgTree.selectAll("text")
+          .filter(function(d) {console.log(d.text);return d.depth!=  1; })
+          .style("visibility", function() {
+              return "hidden"
+          })
+      }
+      var tree
+     
+          root = parseData(data)
+   
+          tree=d3.treemap()
+          .size([width, height])
+          .padding(0)
+          .round(true)
+          tree=tree(root)
+          currentDepth=root.depth
+          render(root.descendants())
+     
+      function len_tezt(text,fontsize, width,height){
+          if (text === undefined){
+            return ""
+          }
+          while(text.length > 0){
+            var container = d3.select('body').append('svg');
+            container.append('text').attr("x", -99999).attr("y", -99999)  .text(text);
+            var size = container.node().getBBox();
+            container.remove();
+            let s_width=size.width
+      
+            if(size.height>height){
+              return ''
+            }
+            if (s_width < width){
+              break
+            }else{
+              text = text.substring(0, text.length-1);
+            }
+          }
+      
+          return text
+      }
+      
+      
       //----Barplots
     
       const margin_bar = { top: 30, right: 0, bottom: 20, left: 50 },
@@ -713,13 +770,11 @@ const svgSlider = d3.select("#range-slider")
             barData.push(deneme);
           }
           //stack the data? --> stack per subgroup
-    
           stackedData = d3.stack()
             .keys(subgroups)
             (barData);
-            
-            // svg.selectAll("rect.negative").remove()
-          svgBarplot.selectAll("rect").remove();
+
+            svgBarplot.selectAll("rect").remove();
     
           svgBarplot.append("g").selectAll("g")
             // Enter in the stack data = loop key per key = group per group
@@ -733,11 +788,10 @@ const svgSlider = d3.select("#range-slider")
             .attr("x", d => x_bar(d.data.Genre))
             .attr("y", d => y_bar(d[1]))
             .attr("height", d => y_bar(d[0]) - y_bar(d[1]))
-            .attr("width", x_bar.bandwidth()).on('mousemove',mouseover).on('mouseout',mouseout)
-            // .on("mousemove",mousemove);
-        })
-//
+            .attr("width", x_bar.bandwidth()).on('mousemove',mouseover).on('mouseout',mouseout);
 
+            console.log(stackedData);
+        })
       // List of groups = species here = value of the first column called group -> I show them on the X axis
       const groups = data.map(d => (d.Genre));
 

@@ -25,35 +25,12 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/d3-ease@3"></script>
 <link rel="stylesheet" href="//code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
-<link rel="stylesheet" href="/resources/demos/style.css">
+<!-- <link rel="stylesheet" href="/resources/demos/style.css"> -->
 <script src="https://code.jquery.com/jquery-3.6.0.js"></script>
 <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script>
-<!-- <script>
-    var years= [ 1996, 2021 ]
-    $( function() {
-      $( "#slider-range" ).slider({
-        range: true,
-        min: 1996,
-        max: 2021,
-        values: [ 1996, 2021 ],
-        slide: function( event, ui ) {
-            console.log(ui.values)
-            years = ui.values
-            hello(years)
-          $( "#amount" ).val(  + ui.values[ 0 ] + " - $" + ui.values[ 1 ] );
-        }
-      });
-      $( "#amount" ).val( "" + $( "#slider-range" ).slider( "values", 0 ) +
-        "" + $( "#slider-range" ).slider( "values", 1 ) );
-    } );
-    </script> -->
 </head>
 <body>
-    <!-- <p>
-        <label for="amount">Year range:</label>
-        <input type="text" id="amount" readonly style="border:0; color:#f6931f; font-weight:bold;">
-      </p> -->
-       
+
       <div id="slider-range"></div>
     <div class="container-fluid">
         <!-- first row -->
@@ -83,7 +60,7 @@
     </div>
 
     </div>
-    <script src="{{url_for('static', filename='treemap_cliccable.js')}}"></script>
+    <!-- <script src="{{url_for('static', filename='treemap_cliccable.js')}}"></script> -->
     <script src="{{url_for('static', filename='plots.js')}}"></script>
     <script>
         // hello()
