@@ -4,10 +4,6 @@ viewportHeight = window.innerHeight;
 viewportWidth = window.innerWidth;
 var stackedData;
 var colors1;
-var NA_checked = true;
-var EU_checked = true;
-var JP_checked = true;
-var Other_checked = true;
 
 var Tooltip = d3.select("#barPlot")
 .append("div")
@@ -32,6 +28,7 @@ const margin_parallel = { top: 20, right: 10, bottom: 10, left: 30 },
   var width_slider = (viewportWidth -200),
   height_slider = 40 ;
 
+
 const dimNames = { "NA_Sales": 3, "EU_Sales": 4, "JP_Sales": 5, "Other_Sales": 6, "Global_Sales": 7 };
 
 function range(start, end) {
@@ -43,7 +40,6 @@ function range(start, end) {
 }
 
 const slider_years = range(1980,2016);
-console.log(slider_years);
 const mouseover = (event, d) => {
   Tooltip.transition()
   .duration('10');
@@ -71,6 +67,13 @@ const mouseout = (event, d) => {
          .style("visibility","hidden");
 }
 function load_data(from,to){
+  var NA_checked = true;
+  var EU_checked = true;
+  var JP_checked = true;
+  var Other_checked = true;
+
+var isChecked = {"Other_Sales" : Other_checked, "NA_Sales" : NA_checked, "EU_Sales": EU_checked, "JP_Sales": JP_checked };
+
   var maxglobalSum = 0;
   const svgScatterPlot = d3.select("#scatterplot")
   .append("svg")
@@ -93,7 +96,6 @@ const svgSlider = d3.select("#range-slider")
   .attr("height", height_slider);
 
   const sito = "/home?from=" + String(from)+"&to=" + String(to);
-  console.log(sito);
 
   d3.csv(sito).then(function (data) {
     //slider
@@ -534,16 +536,33 @@ const svgSlider = d3.select("#range-slider")
       var currentDepth=0
       
       let color_tree = d3.scaleSequential([8, 0], d3.interpolateCool);
-      
+      //
+      function getTreeValue(xs) {
+        var sum = 0;
+    
+        if (JP_checked) {
+          sum = sum+d3.sum(xs, x => x.JP_Sales);
+        }
+        if (EU_checked) {
+          sum = sum+d3.sum(xs, x => x.EU_Sales);
+        }
+        if (NA_checked) {
+          sum = sum+ d3.sum(xs, x => x.NA_Sales);
+        }
+        if (Other_checked) {
+          sum = sum+d3.sum(xs, x => x.Other_Sales);
+        }
+        return sum;
+      }
+      //
       function parseData(data){
           var root2
           let groups = d3.rollup(data,
-              function(d) { return  d3.sum(d, v => v.Global_Sales)},
+               xs => getTreeValue(xs),
               function(d) { return d.Genre; },
               function(d) { return d.Platform; },
               function(d) { return d.Publisher; }
              );
-          // console.log(groups)
           root2 = d3.hierarchy(groups);
           root2.sum(function(d){return d[1]}).sort((a, b) => b.height - a.height || b.value - a.value);
       
@@ -594,13 +613,11 @@ const svgSlider = d3.select("#range-slider")
           .style("stroke", "black")
           .style("fill", "slateblue")
           .text(function(d){ return d.data[0] })
-          .on('click',function(a,d){ zoom(a,d)})
+          .on('click',function(a,d){console.log(d); zoom(a,d)})
           .filter(function(d) { return d.depth!=1; })
           .style("visibility", function() {
               return "hidden"
           })
-        
-      
       // and to add the text labels
       svgTree
         .selectAll("text")
@@ -614,18 +631,16 @@ const svgSlider = d3.select("#range-slider")
           .attr('data-width', (d) => d.x1 - d.x0)
           .attr('font-size', '15px')
       svgTree.selectAll("text")
-          .filter(function(d) {console.log(d.text);return d.depth==  1; })
+          .filter(function(d) {return d.depth==  1; })
           .text(function(d){ return len_tezt(d.data[0],15,  d.x1 - d.x0, d.y1-d.y0)})
       svgTree.selectAll("text")
-          .filter(function(d) {console.log(d.text);return d.depth!=  1; })
+          .filter(function(d) {return d.depth!=  1; })
           .style("visibility", function() {
               return "hidden"
           })
       }
-      var tree
-     
+      var tree;
           root = parseData(data)
-   
           tree=d3.treemap()
           .size([width, height])
           .padding(0)
@@ -654,10 +669,8 @@ const svgSlider = d3.select("#range-slider")
               text = text.substring(0, text.length-1);
             }
           }
-      
           return text
       }
-      
       
       //----Barplots
     
@@ -673,10 +686,7 @@ const svgSlider = d3.select("#range-slider")
         .attr("height", height_bar + margin_bar.top + margin_bar.bottom)
         .append("g")
         .attr("transform", `translate(${margin_bar.left},${margin_bar.top})`);
-    
-    
-      // Parse the Data
-    
+
       // List of subgroups = header of the csv files = soil condition here
     
       const subgroups = data.columns.slice(9, 13);
@@ -736,7 +746,10 @@ const svgSlider = d3.select("#range-slider")
         // .style("background-color", function (d) { 
         //   return color1(d)})
         .append("input")
-        .attr("checked", true)
+        .attr("checked", function (d){ 
+          console.log(isChecked[d])
+          return isChecked[d];
+        })
         .attr("type", "checkbox")
         .attr("transform", function (d, i) { return "translate(0," + 10 + i * 10 + ")" })
         .attr("id", function (d, i) { return i; })
@@ -774,7 +787,7 @@ const svgSlider = d3.select("#range-slider")
             .keys(subgroups)
             (barData);
 
-            svgBarplot.selectAll("rect").remove();
+          svgBarplot.selectAll("rect").remove();
     
           svgBarplot.append("g").selectAll("g")
             // Enter in the stack data = loop key per key = group per group
@@ -789,12 +802,22 @@ const svgSlider = d3.select("#range-slider")
             .attr("y", d => y_bar(d[1]))
             .attr("height", d => y_bar(d[0]) - y_bar(d[1]))
             .attr("width", x_bar.bandwidth()).on('mousemove',mouseover).on('mouseout',mouseout);
+          
+            //
+          
+            root = parseData(data)
+            console.log(root.children[1]);
+            tree=d3.treemap()
+            .size([width, height])
+            .padding(0)
+            .round(true)
+            tree=tree(root)
+            currentDepth=root.depth
+            render(root.descendants());
 
-            console.log(stackedData);
         })
       // List of groups = species here = value of the first column called group -> I show them on the X axis
       const groups = data.map(d => (d.Genre));
-
       // Add X axis
       const x_bar = d3.scaleBand()
         .domain(groups)
