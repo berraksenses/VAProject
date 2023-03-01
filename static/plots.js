@@ -4,7 +4,8 @@ viewportHeight = window.innerHeight;
 viewportWidth = window.innerWidth;
 var stackedData;
 var colors1;
-
+var from=1980;
+var to=2016;
 var Tooltip = d3.select("#barPlot")
 .append("div")
 .style("opacity", 1)
@@ -43,7 +44,7 @@ function range(start, end) {
 const slider_years = range(1980,2016);
 const mouseover = (event, d) => {
   Tooltip.transition()
-  .duration('10');
+  .duration(1000);
   var text = '<ul class="legend" style="padding-left: 0px;">  ';
   const keys = Object.keys(d.data);
   keys.forEach((key, index) => {
@@ -64,7 +65,7 @@ const mouseover = (event, d) => {
 
 const mouseout = (event, d) => {
   Tooltip.transition()
-         .duration('10')
+         .duration('1000')
          .style("visibility","hidden");
 }
 function load_data(from,to){
@@ -109,13 +110,22 @@ const svgSlider = d3.select("#range-slider")
     var xAxis = d3.axisBottom(x);
     
       const bar = svgSlider.append("g")
-          .attr("fill", "#d4cfcf")
+          
         .selectAll("rect")
         .data(x.domain())
-        .join("rect").attr("padding", "5px")
+        .join("rect").attr("padding", "5px").attr("fill", function(d) {
+          if(from<=d && d<=to){
+            return "orange"
+          }
+          else{
+            return "#d4cfcf"
+          }})
+        
           .attr("x", d => x(d) - x.step() / 2)
           .attr("height", 18)
-          .attr("width", x.step()-1);
+          .attr("width", x.step()-1)
+         //
+         // bar.attr("fill", (d, i) => from <= i && i < to ? "orange" : null);
           
     // svgSlider.append("g").attr("class", "axis axis--x")
     // .attr("transform", "translate(0," + 17+ ")").call(xAxis);
@@ -135,8 +145,7 @@ const svgSlider = d3.select("#range-slider")
     
           svgSlider.append("g")
           .call(brush);
-    var from;
-    var to;
+
       function brushed({selection}) {
         if (selection) {
           const range = x.domain().map(x);
@@ -145,11 +154,10 @@ const svgSlider = d3.select("#range-slider")
           
           const i1 = d3.bisectRight(range, selection[1]);
           to = i1;
-          bar.attr("fill", (d, i) => i0 <= i && i < i1 ? "orange" : null);
+          bar.attr("fill", (d, i) => from <= i && i < to ? "orange" : "#d4cfcf");
           svgSlider.property("value", x.domain().slice(i0, i1)).dispatch("input");
           
         } else {
-          bar.attr("fill", null);
           svgSlider.property("value", []).dispatch("input");
         }
       }
@@ -158,7 +166,7 @@ const svgSlider = d3.select("#range-slider")
         const range = x.domain().map(x), dx = x.step() / 2;
         const x0 = range[d3.bisectRight(range, selection[0])] - dx;
         const x1 = range[d3.bisectRight(range, selection[1]) - 1] + dx;
-        d3.select(this).transition().call(brush.move, x1 > x0 ? [x0, x1] : null);
+        d3.select(this).call(brush.move, x1 > x0 ? [x0, x1] : null);
         d3.select("#barPlot").selectAll("svg").remove();
         d3.select("#parallelCoordinates").selectAll("svg").remove();
         d3.select("#scatterplot").selectAll("svg").remove();
@@ -174,16 +182,12 @@ const svgSlider = d3.select("#range-slider")
       const x_scatter = d3.scaleSqrt()
         .domain(d3.extent(data, function (d) { return parseFloat(d.X1); }))
         .range([3, width_scatter]);
-      if (d3.select("#scatter_plot_id_x")._groups[0][0]){
-        
-        d3.select("#scatter_plot_id_x").transition().call(d3.axisBottom(x_scatter));
-      }
-      else{
+
+   
       svgScatterPlot.append("g")
         .attr("transform", `translate(0, ${height_scatter+5})`)
-        .attr("id","scatter_plot_id_x")
         .call(d3.axisBottom(x_scatter));
-      }
+      
       // Add Y axis
       const y_scatter = d3.scaleLinear()
         .domain(d3.extent(data, function (d) { return parseFloat(d.X2); }))
@@ -223,7 +227,7 @@ const svgSlider = d3.select("#range-slider")
         .join("circle")
         .attr("cx", function (d) { return x_scatter(d.X1); })
         .attr("cy", function (d) { return y_scatter(d.X2); })
-        .attr("r", 2).style("opacity", ".3")
+        .attr("r", 2).transition().duration(500).style("opacity", ".3")
         .style("fill", function (d) { return color_mean(d.color) })
     
       var brushTot = d3.brush()
@@ -260,17 +264,17 @@ const svgSlider = d3.select("#range-slider")
               if ((x_scatter(d.X1) > selection[0][0]) && (x_scatter(d.X1) < selection[1][0]) && (y_scatter(d.X2) > selection[0][1]) && (y_scatter(d.X2) < selection[1][1])) {
                 dataSelection.push(d.id)
                 d3.select(this).raise()
-                d3.select(this).style("opacity", 1);
+                d3.select(this).style("opacity", 1)
                 return "red"
               }
               else {
                 // d3.select(this).lower()
                 return "#69b3a2"
               }
-            }})
+            }});
         }
         else {
-          svgScatterPlot.selectAll("circle").style("opacity", 0.3);
+          svgScatterPlot.selectAll("circle").transition().duration(300).style("opacity", 0.3)
           svgScatterPlot.selectAll("circle").attr("r", 2);
           svgParallel.selectAll(".forepath").style("stroke", "#69b3a2").style("opacity",0.5);
           svgParallel.selectAll(".backpath").style("stroke", "#69b3a2").style("opacity",0.5);
@@ -385,10 +389,6 @@ const svgSlider = d3.select("#range-slider")
         return v == null ? x1(d) : v;
       }
     
-      function transition(g) {
-        return g.transition().duration(500);
-      }
-    
       // Returns the path for a given data point.
       function path(d) {
         return line(dimensions.map(function (p) { return [position(p), y1[p](d[p])]; }));
@@ -416,27 +416,6 @@ const svgSlider = d3.select("#range-slider")
             }) ? null : "none";}
           );
     
-          var dneme;
-          svgScatterPlot.selectAll("circle").attr("r", function (d) {
-            dimensions.every(function (element, index) {
-              if (extents[index][1] <= d[element] && d[element] <= extents[index][0] || extents[index][0] == 0) {
-    
-                dneme = true;
-                return true
-              }
-              else {
-                dneme = false;
-                return false
-              }
-            }
-            )
-            if (dneme) {
-              return "3"
-            }
-            else {
-              return "1"
-            }
-          })
           var bok;
           svgScatterPlot.selectAll("circle").style("opacity", function (d) {
             dimensions.every(function (p, i) {
@@ -456,8 +435,29 @@ const svgSlider = d3.select("#range-slider")
             else {
               return "0.3"
             }
-          })
+          });
+          var dneme;
+          svgScatterPlot.selectAll("circle").transition().duration(200).attr("r", function (d) {
+            dimensions.every(function (element, index) {
+              if (extents[index][1] <= d[element] && d[element] <= extents[index][0] || extents[index][0] == 0) {
     
+                dneme = true;
+                return true
+              }
+              else {
+                dneme = false;
+                return false
+              }
+            }
+            )
+            if (dneme) {
+              return "3"
+            }
+            else {
+              return "1"
+            }
+          });
+          
         }
         else {
           svgParallel.selectAll(".forepath").style("display","none");
@@ -468,14 +468,14 @@ const svgSlider = d3.select("#range-slider")
     
             svgParallel.selectAll(".backpath").style("stroke", "#69b3a2");
             svgParallel.selectAll(".forepath").style("stroke", "#69b3a2");
+            
+            svgScatterPlot.selectAll("circle").transition().duration(200).attr("r", 2);
             svgScatterPlot.selectAll("circle").style("opacity", 0.3);
-            svgScatterPlot.selectAll("circle").attr("r", 2);
-    
           }
           else {
     
             var dneme;
-            svgScatterPlot.selectAll("circle").attr("r", function (d) {
+            svgScatterPlot.selectAll("circle").transition().duration(200).attr("r", function (d) {
               dimensions.every(function (element, index) {
                 if (extents[index][1] <= d[element] && d[element] <= extents[index][0] || extents[index][0] == 0) {
                   dneme = true;
@@ -596,7 +596,7 @@ const svgSlider = d3.select("#range-slider")
           }
 
           svgTree.selectAll("rect")    
-          .transition(t)
+          .transition().duration(800)
           .attr("x", function(d) { return x_tree(d.x0) ; })
           .attr("y", function(d) { return y_tree(d.y0) ; })
           .attr("width", function(d) { return x_tree(d.x1) - x_tree(d.x0) ; })
@@ -819,9 +819,9 @@ const svgSlider = d3.select("#range-slider")
             .data(d => d)
             .join("rect")
             .attr("x", d => x_bar(d.data.Genre))
-            .attr("y", d => y_bar(d[1]))
+            .attr("y", d => y_bar(d[1])).attr("width", x_bar.bandwidth())
             .attr("height", d => y_bar(d[0]) - y_bar(d[1]))
-            .attr("width", x_bar.bandwidth()).on('mousemove',mouseover).on('mouseout',mouseout);
+            .on('mousemove',mouseover).on('mouseout',mouseout);
           
             //
           
@@ -863,7 +863,7 @@ const svgSlider = d3.select("#range-slider")
     
       // Add Y axis
       const y_bar = d3.scaleLinear()
-        .domain([0,maxglobalSum +60])
+        .domain([0,maxglobalSum +30])
         .range([height_bar, 0]);
       svgBarplot.append("g")
         .call(d3.axisLeft(y_bar));
