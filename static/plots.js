@@ -6,6 +6,7 @@ var stackedData;
 var colors1;
 var from=1980;
 var to=2016;
+
 var Tooltip = d3.select("#barPlot")
 .append("div")
 .style("opacity", 1)
@@ -16,7 +17,19 @@ var Tooltip = d3.select("#barPlot")
 .style("border-width", "2px")
 .style("border-radius", "5px")
 .style("padding", "5px")
-.style("pointer-events", "none")
+.style("pointer-events", "none");
+
+var circleTooltip = d3.select("#scatterplot")
+.append("div")
+.style("opacity", 1)
+.style("visibility", "hidden")
+.attr("class", "tooltip")
+.style("background-color", "white")
+.style("border", "solid")
+.style("border-width", "2px")
+.style("border-radius", "5px").style("width", "100px")
+.style("pointer-events", "none");
+
 
 var current_node=null
 const margin_scatter = { top: 20, right: 30, bottom: 30, left: 30 },
@@ -42,6 +55,7 @@ function range(start, end) {
 }
 
 const slider_years = range(1980,2016);
+
 const mouseover = (event, d) => {
   Tooltip.transition()
   .duration(1000);
@@ -229,7 +243,9 @@ const svgSlider = d3.select("#range-slider")
         .attr("cy", function (d) { return y_scatter(d.X2); })
         .attr("r", 2).transition().duration(500).style("opacity", ".3")
         .style("fill", function (d) { return color_mean(d.color) })
-    
+
+
+
       var brushTot = d3.brush()
         .extent([[0, 0], [width_scatter+6, height_scatter+6]])
         .on("end", selected);
@@ -265,19 +281,19 @@ const svgSlider = d3.select("#range-slider")
                 dataSelection.push(d.id)
                 d3.select(this).raise()
                 d3.select(this).style("opacity", 1)
-                return "red"
+                return "#6d51db"
               }
               else {
                 // d3.select(this).lower()
-                return "#69b3a2"
+                return "#b8b8b0"
               }
             }});
         }
         else {
           svgScatterPlot.selectAll("circle").transition().duration(300).style("opacity", 0.3)
           svgScatterPlot.selectAll("circle").attr("r", 2);
-          svgParallel.selectAll(".forepath").style("stroke", "#69b3a2").style("opacity",0.5);
-          svgParallel.selectAll(".backpath").style("stroke", "#69b3a2").style("opacity",0.5);
+          svgParallel.selectAll(".forepath").style("stroke", "#adab82").style("opacity",0.5);
+          svgParallel.selectAll(".backpath").style("stroke", "#adab82").style("opacity",0.5);
           
           svgParallel.selectAll("path").lower();
           // d3.select(this).style("opacity", 1);
@@ -329,7 +345,7 @@ const svgSlider = d3.select("#range-slider")
         .enter().append("path")
         .attr("class", "backpath")
         .attr("d", path).style("fill", "none")
-        .style("stroke", "#C0C0C0n").style("opacity", 0.5);
+        .style("stroke", "#C0C0C0n").style("opacity", 0.5).style("stroke-width","2px");
     
       // Add blue foreground lines for focus.
       var foreground = svgParallel.append("g")
@@ -339,20 +355,20 @@ const svgSlider = d3.select("#range-slider")
         .enter().append("path")
         .attr("class", "forepath")
         .attr("d", path).style("fill", "none")
-        .style("stroke", "#69b3a2").style("opacity", 0.5);
+        .style("stroke", "#adab82").style("opacity", 0.5).style("stroke-width","2px");
     
       // Add a group element for each dimension.
       var g_before3 = svgParallel.selectAll(".dimension1")
         .data(dimensions.slice(0, 3))
         .enter().append("g")
-        .attr("class", "dimension1")
+        .attr("class", "dimension1").style("font-size",  "large").style("font-weight", "500").style("text-shadow", "#fff 2px 0 1px")
         .attr("transform", function (d) { return "translate(" + x1(d) + ")"; })
     
     
       var g_after3 = svgParallel.selectAll(".dimension2")
         .data(dimensions.slice(3))
         .enter().append("g")
-        .attr("class", "dimension2")
+        .attr("class", "dimension2").style("text-shadow", "#fff 1px 0 10px").style("font-weight","bold")
         .attr("transform", function (d) { return "translate(" + x1(d) + ")"; })
         
       // Add an axis and title.
@@ -371,7 +387,7 @@ const svgSlider = d3.select("#range-slider")
         .append("text")
         .style("text-anchor", "middle")
         .attr("y", -9)
-        .text(function (d) { return d; }).style("fill", "black")
+        .text(function (d) {return d; }).style("fill", "black")
     
       // Add and store a brush for each axis.
       g_after3.append("g")
@@ -398,9 +414,32 @@ const svgSlider = d3.select("#range-slider")
       function brush_parallel_chart(event, i) {
         // svgParallel.selectAll(".forepath").style("display",true)
         if (event.selection != null) {
-          svgParallel.selectAll(".backpath").style("stroke", "#C0C0C0");
-          svgParallel.selectAll(".forepath").style("stroke", "#ff3349").style("opacity",1);
+          svgParallel.selectAll(".backpath").style("stroke", "#fbd1a2");
+          svgParallel.selectAll(".forepath").style("stroke", "#2296f0").style("opacity",1)
+          .on('mousemove', function(event,d){
+
+            var txt = 'Name:' + d.Name +  '<br>' +
+            'Total Sales:' + d.Global_Sales + '<br>'
+            console.log(txt);
+            circleTooltip
+              .html(txt)
+              .style("visibility","visible")
+              .style("left", (event.layerX+450) + "px")
+              .style("top", (event.layerY) + "px");
+              d3.select(this).style("stroke", "purple").style("stroke-width", "4px");
+              d3.select(this).raise();
+          })
+          // Hide the tooltip when "mouseout"
+          .on('mouseout', function(event,d){
+            circleTooltip.transition()
+            .duration('1000')
+            .style("visibility","hidden");
+            
+            d3.select(this).style("stroke-width","3px").style("stroke","#2296f0").lower();
+      
+          });
     
+
           for (var j = 0; j < dimensions.length; ++j) {
             if (event.target == y1[dimensions[j]].brush) {
               extents[j] = event.selection.map(y1[dimensions[j]].invert, y1[dimensions[j]]);
@@ -466,8 +505,8 @@ const svgSlider = d3.select("#range-slider")
           var truth_val = extents.every(element => element.every(e => e == 0));
           if (truth_val) {
     
-            svgParallel.selectAll(".backpath").style("stroke", "#69b3a2");
-            svgParallel.selectAll(".forepath").style("stroke", "#69b3a2");
+            svgParallel.selectAll(".backpath").style("stroke", "#adab82");
+            svgParallel.selectAll(".forepath").style("stroke", "#adab82");
             
             svgScatterPlot.selectAll("circle").transition().duration(200).attr("r", 2);
             svgScatterPlot.selectAll("circle").style("opacity", 0.3);
