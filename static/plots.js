@@ -17,6 +17,7 @@ var Tooltip = d3.select("#barPlot")
 .style("padding", "5px")
 .style("pointer-events", "none")
 
+var current_node=null
 const margin_scatter = { top: 20, right: 30, bottom: 30, left: 30 },
   width_scatter = (viewportWidth * 0.4) - margin_scatter.left - margin_scatter.right,
   height_scatter = viewportHeight * 0.48 - margin_scatter.top - margin_scatter.bottom;
@@ -173,10 +174,16 @@ const svgSlider = d3.select("#range-slider")
       const x_scatter = d3.scaleSqrt()
         .domain(d3.extent(data, function (d) { return parseFloat(d.X1); }))
         .range([3, width_scatter]);
+      if (d3.select("#scatter_plot_id_x")._groups[0][0]){
+        
+        d3.select("#scatter_plot_id_x").transition().call(d3.axisBottom(x_scatter));
+      }
+      else{
       svgScatterPlot.append("g")
         .attr("transform", `translate(0, ${height_scatter+5})`)
+        .attr("id","scatter_plot_id_x")
         .call(d3.axisBottom(x_scatter));
-    
+      }
       // Add Y axis
       const y_scatter = d3.scaleLinear()
         .domain(d3.extent(data, function (d) { return parseFloat(d.X2); }))
@@ -570,13 +577,24 @@ const svgSlider = d3.select("#range-slider")
       }
       
       function zoom(a,current){
-          currentDepth = current.depth+1;
-          var t = d3.transition()
-          .duration(800)
-          .ease(d3.easeCubicOut);
-      
-          x_tree.domain([current.x0, current.x1]);
-          y_tree.domain([current.y0, current.y1]); 
+          current_node = current
+          currentDepth = (current.depth+1)%4;
+          if (currentDepth==0){
+            current_node=root
+            currentDepth=root.depth
+            console.log(current_node)
+            render(root.descendants());
+            zoom(null,current_node)
+            return
+          }else{
+            var t = d3.transition()
+            .duration(800)
+            .ease(d3.easeCubicOut);
+        
+            x_tree.domain([current.x0, current.x1]);
+            y_tree.domain([current.y0, current.y1]); 
+          }
+
           svgTree.selectAll("rect")    
           .transition(t)
           .attr("x", function(d) { return x_tree(d.x0) ; })
@@ -613,7 +631,7 @@ const svgSlider = d3.select("#range-slider")
           .style("stroke", "black")
           .style("fill", "slateblue")
           .text(function(d){ return d.data[0] })
-          .on('click',function(a,d){console.log(d); zoom(a,d)})
+          .on('click',function(a,d){zoom(a,d)})
           .filter(function(d) { return d.depth!=1; })
           .style("visibility", function() {
               return "hidden"
@@ -647,6 +665,8 @@ const svgSlider = d3.select("#range-slider")
           .round(true)
           tree=tree(root)
           currentDepth=root.depth
+          current_node=root
+          console.log(root.children)
           render(root.descendants())
      
       function len_tezt(text,fontsize, width,height){
@@ -812,8 +832,22 @@ const svgSlider = d3.select("#range-slider")
             .padding(0)
             .round(true)
             tree=tree(root)
-            currentDepth=root.depth
+            currentDepth=current_node.depth
+            temporary_node=null
+            root.each(x=> {
+              if(x.parent==undefined){
+                if (currentDepth == 0){
+                  temporary_node=root
+                  return
+                }
+              };
+              if(x.data[0]== current_node.data[0] && x.parent.data[0]==current_node.parent.data[0]){
+                temporary_node=x
+              }
+            })
+            current_node=temporary_node
             render(root.descendants());
+            zoom(null,current_node)
 
         })
       // List of groups = species here = value of the first column called group -> I show them on the X axis
