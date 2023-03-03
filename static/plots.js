@@ -7,6 +7,39 @@ var colors1;
 var from=1980;
 var to=2016;
 
+var tree_map_selection = {}
+var hierarchy_tree_map =["Genre","Platform","Publisher"]
+
+function wrap(textElements, width) {
+  textElements.each(function() {
+    var text = d3.select(this),
+        words = text.text().split(/\s+/).reverse(),
+        word,
+        line = [],
+        lineNumber = 0,
+        lineHeight = 0.9, // ems
+        y = text.attr("y"),
+        dy = parseFloat(text.attr("dy")),
+        tspan = text.text("").append("tspan").attr("x", 0).attr("y", y).attr("dy", dy + "em");
+    while (word = words.pop()) {
+      line.push(word);
+      tspan.text(line.join(" "));
+      if (tspan.node().getComputedTextLength() > width) {
+        line.pop();
+       
+        tspan.text(line.join(" "));
+        line = [word];
+        tspan = text.append("tspan").attr("x", 0).attr("y", y).attr("dy", ++lineNumber * lineHeight + dy + "em").text(word);
+      }
+    }
+  });
+}
+
+function type(d) {
+  d.value = +d.value;
+  return d;
+}
+
 var Tooltip = d3.select("#barPlot")
 .append("div")
 .style("opacity", 1)
@@ -45,7 +78,16 @@ const margin_parallel = { top: 20, right: 10, bottom: 10, left: 30 },
 
 
 const dimNames = { "NA_Sales": 3, "EU_Sales": 4, "JP_Sales": 5, "Other_Sales": 6, "Global_Sales": 7 };
-
+function filterone(x){
+  ret =true
+  if(tree_map_selection.Genre){
+    ret =ret && x.Genre == tree_map_selection.Genre
+}
+if(tree_map_selection.Platform){
+  ret = ret && x.Platform == tree_map_selection.Platform
+}
+return ret 
+}
 function range(start, end) {
   var ans = [];
   for (let i = start; i <= end; i++) {
@@ -63,7 +105,7 @@ const mouseover = (event, d) => {
   const keys = Object.keys(d.data);
   keys.forEach((key, index) => {
     if(d.data[key] != 0 && index!=0){
-      // console.log(key, color1(key))
+ 
       component= '<li><span class='+key+'></span>'+ key + ": "+String(d.data[key]).substring(0,6)+" Million"+'</li><br>'
       text=text+component
      // text = text+" "+ color1(key)+" "+ key + ": " + String(d.data[key]).substring(0,6)+" Million<br>";
@@ -420,7 +462,6 @@ const svgSlider = d3.select("#range-slider")
 
             var txt = 'Name:' + d.Name +  '<br>' +
             'Total Sales:' + d.Global_Sales + '<br>'
-            console.log(txt);
             circleTooltip
               .html(txt)
               .style("visibility","visible")
@@ -614,18 +655,19 @@ const svgSlider = d3.select("#range-slider")
       
           return root2
       }
-      
+ 
       function zoom(a,current){
           current_node = current
           currentDepth = (current.depth+1)%4;
           if (currentDepth==0){
+            tree_map_selection = {}
             current_node=root
             currentDepth=root.depth
-            console.log(current_node)
             render(root.descendants());
             zoom(null,current_node)
             return
           }else{
+            tree_map_selection[hierarchy_tree_map[currentDepth-2]]=current.data[0]
             var t = d3.transition()
             .duration(800)
             .ease(d3.easeCubicOut);
@@ -633,30 +675,110 @@ const svgSlider = d3.select("#range-slider")
             x_tree.domain([current.x0, current.x1]);
             y_tree.domain([current.y0, current.y1]); 
           }
+          data_filtered = data.filter(filterone)
+          
+          // --------
+          reduce =hierarchy_tree_map[currentDepth-2]? hierarchy_tree_map[currentDepth-1] : "Genre"
+          output_Sales = d3.rollups(
+            data_filtered,
+            xs => rollupFnc(xs),
+            d => d[reduce]
+          ).map(([k, v]) => {ret = { Sales: v }; ret[reduce]=k; return ret});
+          barData = [];
+          for (let i = 0; i < output_Sales.length; i++) {
+            var deneme = {};
+            deneme[reduce] = output_Sales[i][reduce];
+            deneme.JP_Sales = output_Sales[i].Sales[0].JP;
+            deneme.EU_Sales = output_Sales[i].Sales[0].EU;
+            deneme.NA_Sales = output_Sales[i].Sales[0].NA;
+            deneme.Other_Sales = output_Sales[i].Sales[0].Other;
+            deneme.Global_Sales = deneme.JP_Sales + deneme.EU_Sales  + deneme.NA_Sales + deneme.Other_Sales
+            barData.push(deneme);
+          }       
+            stackedData = d3.stack().keys(subgroups)(barData);
+            // console.log(stackedData)
+            const totals= output_Sales.map(d =>d.Sales[0].JP + d.Sales[0].EU + d.Sales[0].NA + d.Sales[0].Other);
+            output_Sales.sort((a, b) => totals[output_Sales.indexOf(b)] - totals[output_Sales.indexOf(a)]);
 
-          svgTree.selectAll("rect")    
-          .transition().duration(800)
-          .attr("x", function(d) { return x_tree(d.x0) ; })
-          .attr("y", function(d) { return y_tree(d.y0) ; })
-          .attr("width", function(d) { return x_tree(d.x1) - x_tree(d.x0) ; })
-          .attr("height", function(d) { return y_tree(d.y1) - y_tree(d.y0) ; });
-      
-          svgTree.selectAll("text")    
-          .transition(t)
-          .attr("x", function(d) { return x_tree(d.x0)+5 ; })
-          .attr("y", function(d) { return y_tree(d.y0)+20 ; })
-      
-          svgTree.selectAll("rect").filter(function(d) { return d.ancestors(); })
-          .style("visibility", function(d) { return "hidden"});
-          svgTree.selectAll("rect").filter(function(d) { return d.depth == currentDepth; })
-           .style("visibility", function(d) { return "visible"});
-          svgTree
-           .selectAll("text") .filter(function(d) { return d.ancestors(); })
-           .style("visibility", function(d) { return "hidden"});
-           svgTree
-           .selectAll("text").filter(function(d) { return d.depth == currentDepth; })
-           .style("visibility", function(d) { return "visible"}).text(function(d){ return len_tezt(d.data[0],15, x_tree(d.x1) - x_tree(d.x0),y_tree(d.y1) - y_tree(d.y0))});
-      }
+            // stackedData.forEach(d => d.sort((a, b) => b[1][Global] - a[1][sortCriteria]));
+
+            let x_zoom = d3.scaleBand()
+              .domain(output_Sales.map(d =>d[reduce]))
+              .range([0, width_bar])
+              .padding([0.2])
+            let y_zoom = d3.scaleLinear()
+              .domain([0,d3.extent(barData, function (d) { return parseFloat(d.Global_Sales); })[1]])
+              .range([height_bar, 0]);
+              
+              svgBarplot.selectAll("rect").remove();
+              
+              svgBarplot.append("g").selectAll("g")
+              // Enter in the stack data = loop key per key = group per group
+              .data(stackedData)
+              .join("g")
+              .attr("fill", d => color1(d.key))
+              .selectAll("rect")
+              // enter a second time = loop subgroup per subgroup to add all rectangles
+              .data(d => d)
+              .join("rect")
+              .attr("x", d => x_zoom(d.data[reduce]))
+              .attr("y", d => y_zoom(d[1])).attr("width", x_zoom.bandwidth())
+              .attr("height", d => y_zoom(d[0]) - y_zoom(d[1]))
+              .on('mousemove',mouseover).on('mouseout',mouseout);
+              
+              svgBarplot.select("#y_bar_plot")
+                .call(d3.axisLeft(y_zoom));
+              
+             const amk = svgBarplot.select("#x_bar_plot")
+               .call(d3.axisBottom(x_zoom))
+
+           amk.selectAll(".tick text")
+          
+           .style("font-size", "9px").style("text-anchor", "center")
+         .call(wrap, x_zoom.bandwidth() +15);
+   
+            //.selectAll('.x .tick text')  // select all the x tick texts
+            //   .call(function(t){                
+            //     t.each(function(d){ // for each one
+            //       var self = d3.select(this);
+            //       var s = self.text().split(' ');  // get the text and split it
+            //       s.forEach(function (value, i) {
+            //        console.log();
+            //       });
+                
+                  
+            //     })
+            // });
+
+              
+              //  .style("text-anchor", "center")//.attr("width","20%")
+              // .attr("dx", ".2em")
+              // .attr("dy", ".55em")
+              // .attr("transform", "rotate(-15)");;
+              // // =========
+              svgTree.selectAll("rect")    
+              .transition().duration(800)
+              .attr("x", function(d) { return x_tree(d.x0) ; })
+              .attr("y", function(d) { return y_tree(d.y0) ; })
+              .attr("width", function(d) { return x_tree(d.x1) - x_tree(d.x0) ; })
+              .attr("height", function(d) { return y_tree(d.y1) - y_tree(d.y0) ; });
+              
+              svgTree.selectAll("text")    
+              .transition(t)
+              .attr("x", function(d) { return x_tree(d.x0)+5 ; })
+              .attr("y", function(d) { return y_tree(d.y0)+20 ; })
+              
+              svgTree.selectAll("rect").filter(function(d) { return d.ancestors(); })
+              .style("visibility", function(d) { return "hidden"});
+              svgTree.selectAll("rect").filter(function(d) { return d.depth == currentDepth; })
+              .style("visibility", function(d) { return "visible"});
+              svgTree
+              .selectAll("text") .filter(function(d) { return d.ancestors(); })
+              .style("visibility", function(d) { return "hidden"});
+              svgTree
+              .selectAll("text").filter(function(d) { return d.depth == currentDepth; })
+              .style("visibility", function(d) { return "visible"}).text(function(d){ return len_tezt(d.data[0],15, x_tree(d.x1) - x_tree(d.x0),y_tree(d.y1) - y_tree(d.y0))});
+            }
       function render(elements){
         svgTree.selectAll("rect").data(elements)
         .enter()
@@ -705,7 +827,6 @@ const svgSlider = d3.select("#range-slider")
           tree=tree(root)
           currentDepth=root.depth
           current_node=root
-          console.log(root.children)
           render(root.descendants())
      
       function len_tezt(text,fontsize, width,height){
@@ -733,7 +854,7 @@ const svgSlider = d3.select("#range-slider")
       
       //----Barplots
     
-      const margin_bar = { top: 30, right: 0, bottom: 20, left: 50 },
+      const margin_bar = { top: 30, right: 0, bottom: 35, left: 50 },
         width_bar = innerWidth * 0.5 - margin_bar.left - margin_bar.right,
         height_bar = innerHeight * 0.35 - margin_bar.top - margin_bar.bottom;
     
@@ -768,7 +889,7 @@ const svgSlider = d3.select("#range-slider")
       xs => rollupGlobal(xs),
       d => d.Genre).map(([k, v]) => ({ Genre: k, globalSale: v }));
     
-          function rollupFnc(xs) {
+    function rollupFnc(xs) {
             datas =
             {
               "JP": 0.0,
@@ -806,7 +927,6 @@ const svgSlider = d3.select("#range-slider")
         //   return color1(d)})
         .append("input")
         .attr("checked", function (d){ 
-          console.log(isChecked[d])
           return isChecked[d];
         })
         .attr("type", "checkbox")
@@ -845,27 +965,26 @@ const svgSlider = d3.select("#range-slider")
           stackedData = d3.stack()
             .keys(subgroups)
             (barData);
-
+          
           svgBarplot.selectAll("rect").remove();
     
-          svgBarplot.append("g").selectAll("g")
+          svgBarplot.append("g")
             // Enter in the stack data = loop key per key = group per group
             .data(stackedData)
             .join("g")
             .attr("fill", d => color1(d.key))
-            .selectAll("rect")
             // enter a second time = loop subgroup per subgroup to add all rectangles
-            .data(d => d)
-            .join("rect")
+            .data(d)
+            .append("rect")
             .attr("x", d => x_bar(d.data.Genre))
-            .attr("y", d => y_bar(d[1])).attr("width", x_bar.bandwidth())
+            .attr("y", d => y_bar(d[1]))
+            .attr("width", x_bar.bandwidth())
             .attr("height", d => y_bar(d[0]) - y_bar(d[1]))
             .on('mousemove',mouseover).on('mouseout',mouseout);
           
             //
           
             root = parseData(data)
-            console.log(root.children[1]);
             tree=d3.treemap()
             .size([width, height])
             .padding(0)
@@ -890,21 +1009,30 @@ const svgSlider = d3.select("#range-slider")
 
         })
       // List of groups = species here = value of the first column called group -> I show them on the X axis
+
+      // var totals_initial= data.map(d =>d.Sales[0].JP + d.Sales[0].EU + d.Sales[0].NA + d.Sales[0].Other);
+      // output_Sales.sort((a, b) => totals[output_Sales.indexOf(b)] - totals[output_Sales.indexOf(a)]);
+
       const groups = data.map(d => (d.Genre));
+      console.log(groups)
+
       // Add X axis
       const x_bar = d3.scaleBand()
         .domain(groups)
         .range([0, width_bar])
         .padding([0.2])
+
       svgBarplot.append("g")
+        .attr("id","x_bar_plot")
         .attr("transform", `translate(0, ${height_bar})`)
-        .call(d3.axisBottom(x_bar).tickSizeOuter(0));
+        .call(d3.axisBottom(x_bar));
     
       // Add Y axis
       const y_bar = d3.scaleLinear()
         .domain([0,maxglobalSum +30])
         .range([height_bar, 0]);
       svgBarplot.append("g")
+      .attr("id","y_bar_plot")
         .call(d3.axisLeft(y_bar));
    
       // console.log(output_Sales);
