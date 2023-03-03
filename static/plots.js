@@ -140,7 +140,6 @@ var isChecked = {"Other_Sales" : Other_checked, "NA_Sales" : NA_checked, "EU_Sal
   .append("g")
   .attr("transform", `translate(${margin_scatter.left}, ${margin_scatter.top})`);
 
-
 const svgParallel = d3.select("#parallelCoordinates")
   .append("svg")
   .attr("width", width_parallel + margin_parallel.left + margin_parallel.right)
@@ -1009,16 +1008,15 @@ const svgSlider = d3.select("#range-slider")
 
         })
       // List of groups = species here = value of the first column called group -> I show them on the X axis
-
-      // var totals_initial= data.map(d =>d.Sales[0].JP + d.Sales[0].EU + d.Sales[0].NA + d.Sales[0].Other);
-      // output_Sales.sort((a, b) => totals[output_Sales.indexOf(b)] - totals[output_Sales.indexOf(a)]);
-
+      
       const groups = data.map(d => (d.Genre));
-      console.log(groups)
-
+      
+      globalNumber.sort((a, b) => b.globalSale - a.globalSale);
+      console.log(globalNumber);
+// output_Sales.map(d =>d[reduce])
       // Add X axis
       const x_bar = d3.scaleBand()
-        .domain(groups)
+        .domain(globalNumber.map(d=>d.Genre))
         .range([0, width_bar])
         .padding([0.2])
 
