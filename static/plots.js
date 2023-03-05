@@ -332,7 +332,6 @@ const margin_scatter = { top: 20, right: 30, bottom: 30, left: 30 },
         
         function selected(event) {
           var selection = event.selection;
-          
           if (selection != null) {
             svgScatterPlot.selectAll("circle").attr("r", function (d) {
               if ((x_scatter(d.X1) > selection[0][0]) && (x_scatter(d.X1) < selection[1][0]) && (y_scatter(d.X2) > selection[0][1]) && (y_scatter(d.X2) < selection[1][1])) {
@@ -356,11 +355,30 @@ const margin_scatter = { top: 20, right: 30, bottom: 30, left: 30 },
                 if ((x_scatter(d.X1) > selection[0][0]) && (x_scatter(d.X1) < selection[1][0]) && (y_scatter(d.X2) > selection[0][1]) && (y_scatter(d.X2) < selection[1][1])) {
                   dataSelection.push(d.id)
                   d3.select(this).raise()
-                  d3.select(this).style("opacity", 1)
+                  d3.select(this).style("opacity", 1).on('mousemove', function(event,d){
+              
+                    var txt = 'Name:' + d.Name +  '<br>' +
+                    'Total Sales:' + d.Global_Sales + '<br>'
+                    circleTooltip
+                    .html(txt)
+                    .style("visibility","visible")
+                    .style("left", (event.layerX+450) + "px")
+                    .style("top", (event.layerY) + "px");
+                    d3.select(this).style("stroke-width", "4px").style("stroke", "#2296f0");
+                    d3.select(this).raise()
+
+                  })
+                  // Hide the tooltip when "mouseout"
+                  .on('mouseout', function(event,d){
+
+                    circleTooltip.transition()
+                    .duration('1000')
+                    .style("visibility","hidden");
+                    d3.select(this).style("stroke-width","1.5px").style("stroke","#6d51db");
+                  })      
                   return "#6d51db"
                 }
                 else {
-                  // d3.select(this).lower()
                   return "#b8b8b0"
                 }
               }});
@@ -368,10 +386,15 @@ const margin_scatter = { top: 20, right: 30, bottom: 30, left: 30 },
             else {
               svgScatterPlot.selectAll("circle").transition().duration(300).style("opacity", 0.5)
               svgScatterPlot.selectAll("circle").attr("r", 2);
-              svgParallel.selectAll(".forepath").style("stroke", "#adab82").style("opacity",0.5);
-              svgParallel.selectAll(".backpath").style("stroke", "#adab82").style("opacity",0.5);
-              
-              svgParallel.selectAll("path").lower();
+              svgParallel.selectAll(".forepath").style("stroke", "#adab82").style("opacity",0.3).lower();
+              svgParallel.selectAll(".backpath").style("stroke", "#adab82").style("opacity",0.3);
+              // svgParallel.selectAll("path").lower();
+              // d3.select(this)
+              svgParallel.selectAll("path").on("mousemove",null).on("mouseout",null);
+              // selected.forEach(function(d){
+              //   console.log(d);
+              //   svgParallel.select(d).style("pointer-events","none");
+              // });
               // d3.select(this).style("opacity", 1);
             }
           }
@@ -417,7 +440,7 @@ const margin_scatter = { top: 20, right: 30, bottom: 30, left: 30 },
             .enter().append("path")
             .attr("class", "backpath")
             .attr("d", path).style("fill", "none")
-            .style("stroke", "#C0C0C0n").style("opacity", 0.5).style("stroke-width","2px");
+            .style("stroke", "#C0C0C0n").style("opacity", 0.3).style("stroke-width","1.5px");
             
             // Add blue foreground lines for focus.
             var foreground = svgParallel.append("g")
@@ -427,7 +450,7 @@ const margin_scatter = { top: 20, right: 30, bottom: 30, left: 30 },
             .enter().append("path")
             .attr("class", "forepath")
             .attr("d", path).style("fill", "none")
-            .style("stroke", "#adab82").style("opacity", 0.5).style("stroke-width","2px");
+            .style("stroke", "#adab82").style("opacity", 0.3).style("stroke-width","1.5px");
             
             // Add a group element for each dimension.
             var g_before3 = svgParallel.selectAll(".dimension1")
@@ -505,7 +528,7 @@ const margin_scatter = { top: 20, right: 30, bottom: 30, left: 30 },
               .duration('1000')
               .style("visibility","hidden");
               
-              d3.select(this).style("stroke-width","3px").style("stroke","#2296f0").lower();
+              d3.select(this).style("stroke-width","1.5px").style("stroke","#2296f0").lower();
               
             });
             
