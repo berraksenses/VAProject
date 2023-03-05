@@ -159,7 +159,7 @@ const margin_scatter = { top: 20, right: 30, bottom: 30, left: 30 },
 
     function defineColor(depth, element) {
       var myColor = d3.scaleOrdinal().domain(["Action","Shooter","Sports", "Platform", "Role-Playing", "Misc","Racing", "Fighting", "Simulation", "Puzzle","Adventure","Strategy"])
-      .range(["red", "green","#f5da42", "steelblue","black","gray","pink", "blue","orange","purple","brown", "lightgreen"]);
+      .range(["#ff7440", "#30592b","#f5da42", "steelblue","#373838","gray","#ffa8be", "blue","orange","purple","brown", "lightgreen"]);
   //     paintRgb = d3.scaleSqrt()
   // .range(["blue", "red"])
   // .interpolate(d3.interpolateHsl)
@@ -170,9 +170,22 @@ const margin_scatter = { top: 20, right: 30, bottom: 30, left: 30 },
             
     }
     else if(depth >1){
-      console.log(element);
-      paintRgb = d3.scaleSqrt().domain([0,element.parent.value])
-      .range(["white",myColor(element.parent.data[0])]);
+      var parent;
+      if(depth==2){
+       parent = element.parent
+      }
+      else{
+        parent = element.parent.parent
+      }
+      var upperValue;
+      if(parent.value>350){
+        upperValue = parent.value - 200;
+      }
+      else {
+        upperValue = parent.value
+      }
+      paintRgb = d3.scaleSqrt().domain([0,upperValue])
+      .range(["white",myColor(parent.data[0])]);
 
      return paintRgb(element.value);
       
@@ -766,11 +779,6 @@ const margin_scatter = { top: 20, right: 30, bottom: 30, left: 30 },
             //     })
             // });
 
-              
-              //  .style("text-anchor", "center")//.attr("width","20%")
-              // .attr("dx", ".2em")
-              // .attr("dy", ".55em")
-              // .attr("transform", "rotate(-15)");;
               // // =========
               svgTree.selectAll("rect")    
               .transition().duration(800)
@@ -798,7 +806,6 @@ const margin_scatter = { top: 20, right: 30, bottom: 30, left: 30 },
 
       
       function render(elements){
-        console.log("giulio",elements)
         svgTree.selectAll("rect").data(elements)
         .enter()
         .append("rect")
@@ -810,7 +817,7 @@ const margin_scatter = { top: 20, right: 30, bottom: 30, left: 30 },
           .attr("class",function(d){ return "node-"+d.depth;})
           .style("stroke", "black")
           .style("fill", d=>defineColor(d.depth,d))
-          .text(function(d){ return d.data[0] })
+          .text(function(d){ return d.data[0]})
 
           .on('click',function(a,d){zoom(a,d)})
           .filter(function(d) { return d.depth!=1; })
@@ -826,7 +833,7 @@ const margin_scatter = { top: 20, right: 30, bottom: 30, left: 30 },
           .attr("x", function(d){ return d.x0+5})    // +10 to adjust position (more right)
           .attr("y", function(d){ return d.y0+20})    // +20 to adjust position (lower)
           .attr("font-size", "15px")
-          .attr("fill", "white")  
+          .attr("fill", "white").style("text-shadow", "#000 1px 0 5px")
           .attr('data-width', (d) => d.x1 - d.x0)
           .attr('font-size', '15px')
       svgTree.selectAll("text")
