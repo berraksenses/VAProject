@@ -762,7 +762,8 @@ const margin_scatter = { top: 20, right: 30, bottom: 30, left: 30 },
               .domain([0,d3.extent(barData, function (d) { return parseFloat(d.Global_Sales); })[1]])
               .range([height_bar, 0]);
               
-              svgBarplot.selectAll("rect").remove();
+              svgBarplot.selectAll("rect").remove()
+    
               
               svgBarplot.append("g").selectAll("g")
               // Enter in the stack data = loop key per key = group per group
@@ -772,11 +773,11 @@ const margin_scatter = { top: 20, right: 30, bottom: 30, left: 30 },
               .selectAll("rect")
               // enter a second time = loop subgroup per subgroup to add all rectangles
               .data(d => d)
-              .join("rect")
+              .join("rect").on('mousemove',mouseover).on('mouseout',mouseout)
               .attr("x", d => x_zoom(d.data[reduce]))
-              .attr("y", d => y_zoom(d[1])).attr("width", x_zoom.bandwidth())
+              .attr("y", d => y_zoom(d[1])).attr("width", x_zoom.bandwidth()).transition().duration(800)
               .attr("height", d => y_zoom(d[0]) - y_zoom(d[1]))
-              .on('mousemove',mouseover).on('mouseout',mouseout);
+              
               
               svgBarplot.select("#y_bar_plot")
                 .call(d3.axisLeft(y_zoom));
