@@ -6,7 +6,6 @@ var stackedData;
 var colors1;
 var from=1980;
 var to=2016;
-
 var tree_map_selection = {}
 var hierarchy_tree_map =["Genre","Platform","Publisher"]
 
@@ -152,6 +151,8 @@ const margin_scatter = { top: 20, right: 30, bottom: 30, left: 30 },
   .append("svg")
   .attr("width", width_slider)
   .attr("height", height_slider);
+   
+  var maxValuesForGenre = {};
   
   const sito = "/home?from=" + String(from)+"&to=" + String(to);
   
@@ -166,6 +167,7 @@ const margin_scatter = { top: 20, right: 30, bottom: 30, left: 30 },
        
         if(depth == 1){
         // console.log(element.data[0]);
+         maxValuesForGenre[element.data[0]] = element.children[0].value
         return myColor(element.data[0]);
             
     }
@@ -177,14 +179,14 @@ const margin_scatter = { top: 20, right: 30, bottom: 30, left: 30 },
       else{
         parent = element.parent.parent
       }
-      var upperValue;
-      if(parent.value>350){
-        upperValue = parent.value - 200;
-      }
-      else {
-        upperValue = parent.value
-      }
-      paintRgb = d3.scaleSqrt().domain([0,upperValue])
+      // if(parent.value>350){
+      //   upperValue = parent.value - 200;
+      // }
+      // else {
+      //   upperValue = parent.value
+      // }
+      //scaleSqrt
+      paintRgb = d3.scaleLinear().domain([-10,maxValuesForGenre[parent.data[0]]])
       .range(["white",myColor(parent.data[0])]);
 
      return paintRgb(element.value);
@@ -271,6 +273,7 @@ const margin_scatter = { top: 20, right: 30, bottom: 30, left: 30 },
       }
       
       //scatter plot
+      //.scaleLinear()
       const x_scatter = d3.scaleSqrt()
       .domain(d3.extent(data, function (d) { return parseFloat(d.X1); }))
       .range([3, width_scatter]);
@@ -674,7 +677,7 @@ const margin_scatter = { top: 20, right: 30, bottom: 30, left: 30 },
       
       var currentDepth=0
       
-      let color_tree = d3.scaleSequential([8, 0], d3.interpolateCool);
+      // let color_tree = d3.scaleSequential([8, 0], d3.interpolateCool);
       //
       function getTreeValue(xs) {
         var sum = 0;
@@ -751,6 +754,8 @@ const margin_scatter = { top: 20, right: 30, bottom: 30, left: 30 },
             // console.log(stackedData)
             const totals= output_Sales.map(d =>d.Sales[0].JP + d.Sales[0].EU + d.Sales[0].NA + d.Sales[0].Other);
             output_Sales.sort((a, b) => totals[output_Sales.indexOf(b)] - totals[output_Sales.indexOf(a)]);
+            var ex= output_Sales.map(d =>d.Sales[0].JP + d.Sales[0].EU + d.Sales[0].NA + d.Sales[0].Other);
+            maxVal = ex[0]
 
             // stackedData.forEach(d => d.sort((a, b) => b[1][Global] - a[1][sortCriteria]));
 
@@ -849,6 +854,7 @@ const margin_scatter = { top: 20, right: 30, bottom: 30, left: 30 },
               return "hidden"
           })
       // and to add the text labels
+      
       svgTree
         .selectAll("text")
         .data(elements)
@@ -1078,13 +1084,13 @@ const margin_scatter = { top: 20, right: 30, bottom: 30, left: 30 },
     
       // Add Y axis
       const y_bar = d3.scaleLinear()
-        .domain([0,maxglobalSum +30])
+        .domain([0,maxglobalSum +100])
         .range([height_bar, 0]);
       svgBarplot.append("g")
       .attr("id","y_bar_plot")
         .call(d3.axisLeft(y_bar));
    
-      // console.log(output_Sales);
+
       var barData = [];
       for (let i = 0; i < output_Sales.length; i++) {
         var deneme = {};
@@ -1099,7 +1105,6 @@ const margin_scatter = { top: 20, right: 30, bottom: 30, left: 30 },
       stackedData = d3.stack()
         .keys(subgroups)
         (barData)
-    
       // Show the bars
       svgBarplot.append("g")
         .selectAll("g")
