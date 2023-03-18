@@ -60,7 +60,7 @@ var circleTooltip = d3.select("#scatterplot")
 .style("background-color", "white")
 .style("border", "solid")
 .style("border-width", "2px")
-.style("border-radius", "5px").style("width", "180px")
+.style("border-radius", "5px").style("width", "100px")
 .style("pointer-events", "none");
 
 
@@ -158,14 +158,14 @@ const margin_scatter = { top: 20, right: 30, bottom: 30, left: 30 },
   
   d3.csv(sito).then(function (data) {
 
-    function defineColor(depth, element, max= undefined) {
+    function defineColor(depth, element) {
       var myColor = d3.scaleOrdinal().domain(["Action","Shooter","Sports", "Platform", "Role-Playing", "Misc","Racing", "Fighting", "Simulation", "Puzzle","Adventure","Strategy"])
       .range(["#ff7440", "#30592b","#f5da42", "steelblue","#373838","gray","#ffa8be", "blue","orange","purple","brown", "lightgreen"]);
   //     paintRgb = d3.scaleSqrt()
   // .range(["blue", "red"])
   // .interpolate(d3.interpolateHsl)
        
-    if(depth == 1){
+        if(depth == 1){
         // console.log(element.data[0]);
          maxValuesForGenre[element.data[0]] = element.children[0].value
         return myColor(element.data[0]);
@@ -179,8 +179,14 @@ const margin_scatter = { top: 20, right: 30, bottom: 30, left: 30 },
       else{
         parent = element.parent.parent
       }
-      m= max || maxValuesForGenre[parent.data[0]]
-      paintRgb = d3.scaleLinear().domain([0,m])
+      // if(parent.value>350){
+      //   upperValue = parent.value - 200;
+      // }
+      // else {
+      //   upperValue = parent.value
+      // }
+      //scaleSqrt
+      paintRgb = d3.scaleLinear().domain([-10,maxValuesForGenre[parent.data[0]]])
       .range(["white",myColor(parent.data[0])]);
 
      return paintRgb(element.value);
@@ -354,12 +360,12 @@ const margin_scatter = { top: 20, right: 30, bottom: 30, left: 30 },
                   d3.select(this).raise()
                   d3.select(this).style("opacity", 1).on('mousemove', function(event,d){
               
-                    var txt =   '<b>Name:</b> '+d.Name +  '<br>' +
-                    '<b>Total Sales:</b> ' + d.Global_Sales + ' Million'+ '<br>'
+                    var txt = 'Name:' + d.Name +  '<br>' +
+                    'Total Sales:' + d.Global_Sales + '<br>'
                     circleTooltip
                     .html(txt)
                     .style("visibility","visible")
-                    .style("left", (event.layerX+380) + "px")
+                    .style("left", (event.layerX+450) + "px")
                     .style("top", (event.layerY) + "px");
                     d3.select(this).style("stroke-width", "4px").style("stroke", "#2296f0");
                     d3.select(this).raise()
@@ -747,7 +753,6 @@ const margin_scatter = { top: 20, right: 30, bottom: 30, left: 30 },
             stackedData = d3.stack().keys(subgroups)(barData);
             // console.log(stackedData)
             const totals= output_Sales.map(d =>d.Sales[0].JP + d.Sales[0].EU + d.Sales[0].NA + d.Sales[0].Other);
-            console.log(totals)
             output_Sales.sort((a, b) => totals[output_Sales.indexOf(b)] - totals[output_Sales.indexOf(a)]);
             var ex= output_Sales.map(d =>d.Sales[0].JP + d.Sales[0].EU + d.Sales[0].NA + d.Sales[0].Other);
             maxVal = ex[0]
@@ -819,7 +824,7 @@ const margin_scatter = { top: 20, right: 30, bottom: 30, left: 30 },
               svgTree.selectAll("rect").filter(function(d) { return d.ancestors(); })
               .style("visibility", function(d) { return "hidden"});
               svgTree.selectAll("rect").filter(function(d) { return d.depth == currentDepth; })
-              .style("visibility", function(d) { return "visible"}).style("fill", d => defineColor(d.depth,d, d3.max(totals)));
+              .style("visibility", function(d) { return "visible"});
               svgTree
               .selectAll("text") .filter(function(d) { return d.ancestors(); })
               .style("visibility", function(d) { return "hidden"});

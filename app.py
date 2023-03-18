@@ -14,7 +14,7 @@ from flask_cors import CORS
 
 def do_pca(date_from, date_to):
   
-  data = pd.read_csv("vgsales.csv").iloc[:1000]
+  data = pd.read_csv("vgsales.csv").iloc[:3000]
   if(date_from == date_to):
     pre_data = data[data["Year"]==int(date_from)]
 
