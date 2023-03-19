@@ -8,6 +8,7 @@ var from=1980;
 var to=2016;
 var tree_map_selection = {}
 var hierarchy_tree_map =["Genre","Platform","Publisher"]
+var dimensionNames = { "NA_Sales": "USA Sales","EU_Sales":"Europe Sales","JP_Sales":"Japan Sales", "Other_Sales":"Other Sales", "Global_Sales": "Global Sales"}
 
 function wrap(textElements, width) {
   textElements.each(function() {
@@ -23,9 +24,14 @@ function wrap(textElements, width) {
     while (word = words.pop()) {
       line.push(word);
       tspan.text(line.join(" "));
-      if (tspan.node().getComputedTextLength() > width) {
+      if (tspan.node().getComputedTextLength()-11 > width) {
+        if(word == "Entertainment"){
+          word = "Ent."
+        }
+        else if(word == "Interactive"){
+          word = "Int."
+        }
         line.pop();
-       
         tspan.text(line.join(" "));
         line = [word];
         tspan = text.append("tspan").attr("x", 0).attr("y", y).attr("dy", ++lineNumber * lineHeight + dy + "em").text(word);
@@ -39,6 +45,8 @@ function type(d) {
   d.value = +d.value;
   return d;
 }
+
+
 
 var Tooltip = d3.select("#barPlot")
 .append("div")
@@ -115,7 +123,7 @@ const margin_scatter = { top: 20, right: 30, bottom: 30, left: 30 },
     Tooltip
     .html(text)
     .style("visibility","visible")
-    .style("left", (event.layerX-180) + "px")
+    .style("left", (event.layerX-220) + "px")
     .style("top", (event.layerY-120) + "px");
   }
   
@@ -146,6 +154,8 @@ const margin_scatter = { top: 20, right: 30, bottom: 30, left: 30 },
   .attr("height", height_parallel + margin_parallel.top + margin_parallel.bottom)
   .append("g")
   .attr("transform", `translate(${margin_parallel.left}, ${margin_parallel.top})`);
+
+  // d3.select("#parallelCoordinates").append("text").attr("transform", `translate(200, 80)`).text("gc");
 
   const svgSlider = d3.select("#range-slider")
   .append("svg")
@@ -468,8 +478,10 @@ const margin_scatter = { top: 20, right: 30, bottom: 30, left: 30 },
         .each(function (d) { d3.select(this).call(d3.axisLeft(y1[d])); })
         .append("text")
         .style("text-anchor", "middle")
-        .attr("y", -10)
-        .text(function (d) { return d; }).style("fill", "black")
+        .attr("y", -10).attr("x",-17)
+        .text(function (d) { if(d in dimensionNames){
+          d = dimensionNames[d] + "*";
+        }return d; }).style("fill", "black").style("font-size", "9px")
         //.style("text-shadow", "0 5px 0 #fff, 1px 0 0 #000, 0 -1px 0 #fff, -1px 0 0 #fff");
         
         g_before3.append("g")
@@ -509,8 +521,8 @@ const margin_scatter = { top: 20, right: 30, bottom: 30, left: 30 },
             svgParallel.selectAll(".forepath").style("stroke", "#2296f0").style("opacity",1)
             .on('mousemove', function(event,d){
               
-              var txt = 'Name:' + d.Name +  '<br>' +
-              'Total Sales:' + d.Global_Sales + '<br>'
+              var txt =   '<b>Name:</b> '+d.Name +  '<br>' +
+              '<b>Total Sales:</b> ' + d.Global_Sales + ' Million'+ '<br>'
               circleTooltip
               .html(txt)
               .style("visibility","visible")
@@ -785,10 +797,9 @@ const margin_scatter = { top: 20, right: 30, bottom: 30, left: 30 },
              const amk = svgBarplot.select("#x_bar_plot")
                .call(d3.axisBottom(x_zoom))
 
-           amk.selectAll(".tick text")
-          
-           .style("font-size", "9px").style("text-anchor", "center")
-         .call(wrap, x_zoom.bandwidth() +15);
+          amk.selectAll(".tick text")
+          .style("font-size", "7.5px").style("text-anchor", "center")
+          .call(wrap, x_zoom.bandwidth());
    
             //.selectAll('.x .tick text')  // select all the x tick texts
             //   .call(function(t){                
@@ -919,6 +930,13 @@ const margin_scatter = { top: 20, right: 30, bottom: 30, left: 30 },
         .append("g")
         .attr("transform", `translate(${margin_bar.left},${margin_bar.top})`);
 
+        svgBarplot.append("text")
+        .attr("class", "y label")
+        .attr("text-anchor", "end").style("font-size", "11px").style("font-weight","medium")
+        .attr("x",-10).attr("y",-37)
+        .attr("transform", "rotate(-90)")
+        .text("Total number of sales in millions");
+
       // List of subgroups = header of the csv files = soil condition here
     
       const subgroups = data.columns.slice(9, 13);
@@ -973,7 +991,7 @@ const margin_scatter = { top: 20, right: 30, bottom: 30, left: 30 },
       d3.select("#checkbox").selectAll("input")
         .data(subgroups)
         .enter().append("label")
-        .text(function (d) { return d; })
+        .text(function (d) {d=dimensionNames[d]; return d; }).style("font-size", "11px").style("font-weight","bold")
         .style("color","black")
         // .style("background-color", function (d) { 
         //   return color1(d)})

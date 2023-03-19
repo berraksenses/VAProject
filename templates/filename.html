@@ -12,6 +12,13 @@
         .legend .EU_Sales { background-color: #1f77b4; }
         .legend .NA_Sales { background-color: #e41a1c; }
         .legend .Other_Sales { background-color: #2ca02c; }
+
+div.fixed {
+  position: fixed;
+  bottom: 38%;
+  right: 25px;
+  width: 350px;
+}
     </style>
     <meta charset="UTF-8">
     <title>FlaskApp</title>
@@ -57,10 +64,13 @@
         <div class="row no-gutters">
             <div class="col-5" id="treemap"></div>
             <div class="col-6" id="barPlot"></div>
-            <div class="col-1" id="checkbox" style="margin-top: 10px"></div>
+            <div class="col-1" id="checkbox" style="margin-top: 20px"></div>
         </div>
     </div>
 
+    </div>
+    <div class="fixed">
+        <p style="font-size:12px; text-align:right;font-style: italic;"> *The numbers sale axises indicate Millions</p>
     </div>
     <!-- <script src="{{url_for('static', filename='treemap_cliccable.js')}}"></script> -->
     <script src="{{url_for('static', filename='plots.js')}}"></script>
