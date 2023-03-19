@@ -5,7 +5,7 @@ viewportWidth = window.innerWidth;
 var stackedData;
 var colors1;
 var from=1980;
-var to=2016;
+var to=2020;
 var tree_map_selection = {}
 var hierarchy_tree_map =["Genre","Platform","Publisher"]
 var dimensionNames = { "NA_Sales": "USA Sales","EU_Sales":"Europe Sales","JP_Sales":"Japan Sales", "Other_Sales":"Other Sales", "Global_Sales": "Global Sales"}
@@ -302,21 +302,21 @@ const margin_scatter = { top: 20, right: 30, bottom: 30, left: 30 },
       .data(["Below Average Sales", "Above Average sale"])//hard coding the labels as the datset may have or may not have but legend should be complete.
       .enter().append("g")
       .attr("class", "legend")
-      .attr("transform", function (d, i) { return "translate(0," + i * 20 + ")"; });
+      .attr("transform", function (d, i) { return "translate(0," + (5+i * 20) + ")"; });
       
       // draw legend colored rectangles
       legend.append("rect")
       .attr("x", width_scatter - 18)
-      .attr("width", 18)
-      .attr("height", 18)
+      .attr("width", 10)
+      .attr("height", 10)
       .style("fill", function (d) { return color_mean(d) });
       
       // draw legend text
       legend.append("text")
       .attr("x", width_scatter - 24)
-      .attr("y", 9)
+      .attr("y", 5)
       .attr("dy", ".35em")
-      .style("text-anchor", "end")
+      .style("text-anchor", "end").style("font-size","9px")
       .text(function (d) { return d; });
       
       // Add dots
@@ -330,7 +330,7 @@ const margin_scatter = { top: 20, right: 30, bottom: 30, left: 30 },
       .style("fill", function (d) { return color_mean(d.color) })
 
       var brushTot = d3.brush()
-        .extent([[0, 0], [width_scatter+6, height_scatter+6]])
+        .extent([[0, -10], [width_scatter+6, height_scatter+4]])
         .on("end", selected);
         
         svgScatterPlot.append("g")
@@ -1097,7 +1097,7 @@ const margin_scatter = { top: 20, right: 30, bottom: 30, left: 30 },
     
       // Add Y axis
       const y_bar = d3.scaleLinear()
-        .domain([0,maxglobalSum +100])
+        .domain([0,maxglobalSum])
         .range([height_bar, 0]);
       svgBarplot.append("g")
       .attr("id","y_bar_plot")
@@ -1135,4 +1135,4 @@ const margin_scatter = { top: 20, right: 30, bottom: 30, left: 30 },
         .attr("width", x_bar.bandwidth()).on('mousemove',mouseover).on('mouseout',mouseout);
     });
 }
-load_data(1980,2020);
+load_data(1980,2016);

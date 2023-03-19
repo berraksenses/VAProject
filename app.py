@@ -62,7 +62,7 @@ def hello():
   date_to = request.args.get('to')
   if not date_from:
     date_from = 1980
-    date_to = 2020
+    date_to = 2016
   pca_data=do_pca(date_from,date_to)
   response = make_response(pca_data.to_csv())
   response.headers['Content-Type'] = 'text/csv'
